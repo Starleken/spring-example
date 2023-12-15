@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,7 +48,7 @@ public class PostController {
             @ApiResponse(responseCode = "404", description = "Channel is not found")
     })
     @PostMapping()
-    public ResponseEntity<PostFullDto> create(@RequestBody PostCreateDto dto){
+    public ResponseEntity<PostFullDto> create(@Valid  @RequestBody PostCreateDto dto){
         return new ResponseEntity<>(postService.create(dto), HttpStatus.CREATED);
     }
 
@@ -57,7 +58,7 @@ public class PostController {
             @ApiResponse(responseCode = "404", description = "Post is not found")
     })
     @PutMapping
-    public ResponseEntity<PostFullDto> update(@RequestBody PostUpdateDto dto){
+    public ResponseEntity<PostFullDto> update(@Valid @RequestBody PostUpdateDto dto){
         return new ResponseEntity<>(postService.update(dto), HttpStatus.OK);
     }
 

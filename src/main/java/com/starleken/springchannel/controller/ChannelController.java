@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +51,7 @@ public class ChannelController {
             @ApiResponse(responseCode = "400", description = "Name is taken")
     })
     @PostMapping()
-    public ResponseEntity<ChannelFullDto> create(@RequestBody ChannelCreateDto dto){
+    public ResponseEntity<ChannelFullDto> create(@Valid @RequestBody ChannelCreateDto dto){
         return new ResponseEntity<>(channelService.create(dto), HttpStatus.CREATED);
     }
 
@@ -61,7 +62,7 @@ public class ChannelController {
             @ApiResponse(responseCode = "400", description = "Name is taken")
     })
     @PutMapping()
-    public ResponseEntity<ChannelFullDto> update(@RequestBody ChannelUpdateDto dto){
+    public ResponseEntity<ChannelFullDto> update(@Valid @RequestBody ChannelUpdateDto dto){
         return new ResponseEntity<>(channelService.update(dto), HttpStatus.OK);
     }
 

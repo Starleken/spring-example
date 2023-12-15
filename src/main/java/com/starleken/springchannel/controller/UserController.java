@@ -76,7 +76,7 @@ public class UserController{
             @ApiResponse(responseCode = "404", description = "User is not found")
     })
     @PutMapping()
-    public ResponseEntity<UserFullDto> update(@RequestBody UserUpdateDto dto){
+    public ResponseEntity<UserFullDto> update(@Valid @RequestBody UserUpdateDto dto){
         return new ResponseEntity<>(userService.update(dto), HttpStatus.OK);
     }
 
@@ -87,7 +87,7 @@ public class UserController{
             @ApiResponse(responseCode = "400", description = "Incorrect password")
     })
     @PutMapping("/password")
-    public ResponseEntity<UserFullDto> changePassword(@RequestBody ChangePasswordDto dto){
+    public ResponseEntity<UserFullDto> changePassword(@Valid @RequestBody ChangePasswordDto dto){
         return new ResponseEntity<>(userService.changePassword(dto), HttpStatus.OK);
     }
 
