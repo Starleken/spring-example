@@ -1,0 +1,46 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="1.0.0" author="Starleken">
+        <sql>
+            create table channel
+            (
+                id   bigint auto_increment
+                    primary key,
+                name varchar(255)                                 not null,
+                type enum ('PROGRAMMING', 'EDUCATION', 'TOURISM') null,
+                constraint UK_1r44jjdpx9o6wabic55qp3mgm
+                    unique (name)
+            );
+        </sql>
+
+        <sql>
+            create table post
+            (
+                channel_id bigint       null,
+                id         bigint auto_increment
+                    primary key,
+                content    varchar(255) not null,
+                title      varchar(255) not null,
+                constraint FKpvtuuee0fnilflnjmilg8w6cw
+                    foreign key (channel_id) references channel (id)
+            );
+        </sql>
+
+        <sql>
+            create table user
+            (
+                id        bigint auto_increment
+                    primary key,
+                image_url varchar(255) null,
+                login     varchar(255) not null,
+                password  varchar(255) not null,
+                constraint UK_ew1hvam8uwaknuaellwhqchhb
+                    unique (login)
+            );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

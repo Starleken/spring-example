@@ -1,0 +1,26 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+spring:
+  liquibase:
+    enabled: true
+    change-log: classpath:liquibase/master.xml
+    url: jdbc:mysql://localhost:3306/microservices
+    user: root
+    password: tqw1467gheK
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/microservices
+    username: root
+    password: tqw1467gheK
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    show-sql: true
+
+    properties:
+      hibernate:
+        format_sql: true
+   
