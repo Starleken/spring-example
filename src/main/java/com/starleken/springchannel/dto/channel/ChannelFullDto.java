@@ -4,6 +4,7 @@ import com.starleken.springchannel.dto.post.PostFullDto;
 import com.starleken.springchannel.entity.ChannelEntityType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
 public class ChannelFullDto {
 
     @Schema(example = "1", description = "Channel id to update")
-    @NotBlank(message = "id must be")
+    @NotNull(message = "id must be")
     private Long id;
 
     @Schema(example = "Starleken", description = "Channel name")
@@ -20,7 +21,7 @@ public class ChannelFullDto {
     private String name;
 
     @Schema(example = "PROGRAMMING", description = "Channel type")
-    @NotBlank(message = "Type must be")
+    @NotNull(message = "Type must be")
     private ChannelEntityType type;
 
     @Schema(description = "Сhannel posts")

@@ -2,12 +2,13 @@ package com.starleken.springchannel.dto.user;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class ChangePasswordDto {
     @Schema(example = "1", description = "User id")
-    @NotBlank(message = "id must be")
+    @NotNull(message = "id must be")
     private Long id;
 
     @NotBlank(message = "old password must be")
