@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.starleken.springchannel.constants.exceptionConstants.ChannelExceptionConstants.*;
 
@@ -34,10 +35,9 @@ public class ChannelServiceImpl implements ChannelService {
     public List<ChannelPreviewDto> findAll() {
         List<ChannelEntity> foundedChannels = channelRepository.findAll();
 
-        List<ChannelPreviewDto> dtoList = new ArrayList<>();
-        for(ChannelEntity channel : foundedChannels){
-            dtoList.add(mapper.mapToPreviewDto(channel));
-        }
+        List<ChannelPreviewDto> dtoList = foundedChannels.stream()
+                .map(mapper::mapToPreviewDto)
+                .collect(Collectors.toList());
 
         log.info("ChannelServiceImpl -> findAll: found {} channels", dtoList.size());
         return dtoList;

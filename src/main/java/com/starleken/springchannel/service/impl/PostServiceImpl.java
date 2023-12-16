@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.starleken.springchannel.constants.exceptionConstants.PostExceptionConstants.*;
 
@@ -37,10 +38,9 @@ public class PostServiceImpl implements PostService {
     public List<PostFullDto> findAll() {
         List<PostEntity> entities = postRepository.findAll();
 
-        List<PostFullDto> dtos = new ArrayList<>(entities.size());
-        for (PostEntity post : entities){
-            dtos.add(mapper.mapToDto(post));
-        }
+        List<PostFullDto> dtos = entities.stream()
+                .map(mapper::mapToDto)
+                .collect(Collectors.toList());
 
         log.info("PostServiceImpl -> findAll: found {} posts", dtos.size());
 

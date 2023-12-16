@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.starleken.springchannel.constants.exceptionConstants.UserExceptionConstants.*;
 
@@ -36,10 +37,9 @@ public class UserServiceImpl implements UserService {
     public List<UserFullDto> findAll() {
         List<UserEntity> foundedUsers = userRepository.findAll();
 
-        List<UserFullDto> dtoList = new ArrayList<>(foundedUsers.size());
-        for(UserEntity user : foundedUsers){ //TODO StreamAPI
-            dtoList.add(userMapper.mapToFullDto(user));
-        }
+        List<UserFullDto> dtoList = foundedUsers.stream()
+                .map(userMapper::mapToFullDto)
+                .collect(Collectors.toList());
 
         log.info("UserServiceImpl -> found {} users", dtoList.size());
         return dtoList;
