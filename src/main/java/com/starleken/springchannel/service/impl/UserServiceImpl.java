@@ -109,6 +109,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserFullDto changePassword(ChangePasswordDto dto) {
         Optional<UserEntity> findedUser = userRepository.findById(dto.getId());
 

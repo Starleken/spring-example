@@ -1,5 +1,6 @@
 package com.starleken.springchannel.core.utils.dtoUtils;
 
+import com.github.javafaker.Faker;
 import com.starleken.springchannel.dto.user.ChangePasswordDto;
 import com.starleken.springchannel.dto.user.UserCreateDto;
 import com.starleken.springchannel.dto.user.UserUpdateDto;
@@ -8,50 +9,50 @@ import org.apache.catalina.User;
 public abstract class UserDtoUtls {
 
     public static UserCreateDto generateUserCreateDto(){
+        Faker faker = new Faker();
+
         UserCreateDto dto = new UserCreateDto();
 
-        dto.setLogin("login: "+ Math.random() * 1000);
-        dto.setEmail("starleken@mail.ru");
-        dto.setPassword("1234");
-        dto.setImageURL("http://image.jpg");
+        dto.setLogin(faker.name().username());
+        dto.setEmail(faker.internet().emailAddress());
+        dto.setPassword(faker.internet().password());
+        dto.setImageURL(faker.internet().image());
 
         return dto;
     }
 
     public static UserCreateDto generateInvalidUserCreateDto(){
-        UserCreateDto dto = new UserCreateDto();
+        UserCreateDto createDto = generateUserCreateDto();
+        createDto.setEmail("starlekenmail.ru");
 
-        dto.setLogin("login: "+ Math.random() * 1000);
-        dto.setEmail("starlekenmail.ru");
-        dto.setPassword("1234");
-        dto.setImageURL("http://image.jpg");
-
-        return dto;
+        return createDto;
     }
 
     public static UserUpdateDto generateUserUpdateDto(Long id){
+        Faker faker = new Faker();
+
         UserUpdateDto dto = new UserUpdateDto();
         dto.setId(id);
-        dto.setEmail("starleken@mail.ru");
-        dto.setImageUrl("http://image.jpg");
+        dto.setEmail(faker.internet().emailAddress());
+        dto.setImageUrl(faker.internet().image());
 
         return dto;
     }
 
     public static UserUpdateDto generateInvalidUserUpdateDto(Long id){
-        UserUpdateDto dto = new UserUpdateDto();
-        dto.setId(id);
+        UserUpdateDto dto = generateUserUpdateDto(id);
         dto.setEmail("starlekenmail.ru");
-        dto.setImageUrl("http://image.jpg");
 
         return dto;
     }
 
     public static ChangePasswordDto generateChangePasswordDto(Long userId, String oldPassword){
+        Faker faker = new Faker();
+
         ChangePasswordDto dto = new ChangePasswordDto();
         dto.setId(userId);
         dto.setOldPassword(oldPassword);
-        dto.setNewPassword("starleken1");
+        dto.setNewPassword(faker.internet().password());
 
         return dto;
     }

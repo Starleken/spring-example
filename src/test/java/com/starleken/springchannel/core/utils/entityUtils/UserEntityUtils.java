@@ -1,15 +1,18 @@
 package com.starleken.springchannel.core.utils.entityUtils;
 
+import com.github.javafaker.Faker;
 import com.starleken.springchannel.entity.UserEntity;
 
-public class UserEntityUtils {
+public abstract class UserEntityUtils {
 
     public static UserEntity generateUser(){
+        Faker faker = new Faker();
+
         UserEntity user = new UserEntity();
-        user.setLogin("Login#" +  Math.random() * 100);
-        user.setPassword("Password#" +  Math.random() * 100);
-        user.setImageURL("Image#" +  Math.random() * 100);
-        user.setEmail("starleken"+ Math.random() * 100 +"@mail.ru");
+        user.setLogin(faker.name().username());
+        user.setPassword(faker.internet().password());
+        user.setImageURL(faker.internet().image());
+        user.setEmail(faker.internet().emailAddress());
 
         return user;
     }

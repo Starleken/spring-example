@@ -10,7 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.List;
 import java.util.Optional;
 
-import static com.starleken.springchannel.EntityGenerationUtils.generateUser;
+import static com.starleken.springchannel.core.utils.entityUtils.UserEntityUtils.generateUser;
 
 @SpringBootTest
 public class UserRepositoryTest {

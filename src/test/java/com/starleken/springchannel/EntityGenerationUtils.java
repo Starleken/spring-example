@@ -38,13 +38,4 @@ public class EntityGenerationUtils {
 
         return posts;
     }
-
-    public static UserEntity generateUser(){
-        UserEntity user = new UserEntity();
-        user.setLogin("Login#" +  Math.random() * 100);
-        user.setPassword("Password#" +  Math.random() * 100);
-        user.setImageURL("Image#" +  Math.random() * 100);
-
-        return user;
-    }
 }

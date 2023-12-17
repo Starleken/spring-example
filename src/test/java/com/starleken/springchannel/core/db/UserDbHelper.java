@@ -29,12 +29,6 @@ public class UserDbHelper {
         return userRepository.save(generateUser());
     }
 
-    public UserEntity saveUserByEmail(String email){
-        UserEntity userToSave = generateUser();
-        userToSave.setEmail(email);
-        return userRepository.save(userToSave);
-    }
-
     public Optional<UserEntity> findUserById(Long id){
         return userRepository.findById(id);
     }
