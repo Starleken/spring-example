@@ -2,6 +2,8 @@ package com.starleken.springchannel.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.starleken.springchannel.core.db.UserDbHelper;
+import com.starleken.springchannel.core.utils.dtoUtils.UserDtoUtls;
 import com.starleken.springchannel.dto.user.ChangePasswordDto;
 import com.starleken.springchannel.dto.user.UserCreateDto;
 import com.starleken.springchannel.dto.user.UserFullDto;
@@ -23,7 +25,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import java.util.List;
 import java.util.Optional;
 
-import static com.starleken.springchannel.EntityGenerationUtils.generateUser;
+import static com.starleken.springchannel.core.utils.dtoUtils.UserDtoUtls.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -31,28 +33,25 @@ public class UserControllerTest {
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
-    private UserRepository userRepository;
+    private UserDbHelper helper;
 
     @Autowired
-    public UserControllerTest(MockMvc mockMvc, UserRepository userRepository, ObjectMapper objectMapper) {
+    public UserControllerTest(MockMvc mockMvc, UserDbHelper helper, ObjectMapper objectMapper) {
         this.mockMvc = mockMvc;
-        this.userRepository = userRepository;
+        this.helper = helper;
         this.objectMapper = objectMapper;
     }
 
     @BeforeEach
     void setUp() {
-        userRepository.deleteAll();
+        helper.clearDB();
     }
 
     @Test
     void findAll_happyPath() throws Exception {
         //given
-        UserEntity userToSave1 = generateUser();
-        UserEntity userToSave2 = generateUser();
-
-        userRepository.save(userToSave1);
-        userRepository.save(userToSave2);
+        helper.saveUser();
+        helper.saveUser();
 
         //when
         MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/user"))
@@ -72,8 +71,7 @@ public class UserControllerTest {
     @Test
     void findById_happyPath() throws Exception{
         //given
-        UserEntity userToSave = generateUser();
-        UserEntity savedUser = userRepository.save(userToSave);
+        UserEntity savedUser = helper.saveUser();
 
         //when
         MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/{id}",
@@ -92,12 +90,11 @@ public class UserControllerTest {
     @Test
     void findById_whenNotFound() throws Exception{
         //given
-        UserEntity userToSave = generateUser();
-        UserEntity savedUser = userRepository.save(userToSave);
+        long idToSearch = 5L;
 
         //when
         MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/{id}",
-                        savedUser.getId()+1))
+                        idToSearch))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
 
@@ -107,8 +104,7 @@ public class UserControllerTest {
     @Test
     void findByLogin_happyPath() throws Exception{
         //given
-        UserEntity userToSave = generateUser();
-        UserEntity savedUser = userRepository.save(userToSave);
+        UserEntity savedUser = helper.saveUser();
 
         //when
         MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/login?login={login}",
@@ -127,11 +123,11 @@ public class UserControllerTest {
     @Test
     void findByLogin_whenNotFound() throws Exception {
         //given
-        String loginForSearch = "starleken";
+        String loginToSearch = "starleken";
 
         //when
         mockMvc.perform(MockMvcRequestBuilders.get("/user/login?login={login}",
-                loginForSearch))
+                        loginToSearch))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
 
@@ -141,12 +137,12 @@ public class UserControllerTest {
     @Test
     void create_happyPath() throws Exception{
         //given
-        UserEntity userToSave = generateUser();
+        UserCreateDto createDto = generateUserCreateDto();
 
         //when
         MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/user")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userToSave)))
+                        .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(MockMvcResultMatchers.status().isCreated())
                 .andReturn();
 
@@ -155,23 +151,31 @@ public class UserControllerTest {
 
         //then
         Assertions.assertNotNull(savedUser);
-        Assertions.assertEquals(userToSave.getLogin(), savedUser.getLogin());
+        Assertions.assertEquals(createDto.getLogin(), savedUser.getLogin());
+    }
+
+    @Test
+    void create_whenEmailIsInvalid() throws Exception{
+        //given
+        UserCreateDto createDto = generateInvalidUserCreateDto();
+
+        //when
+        mockMvc.perform(MockMvcRequestBuilders.post("/user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createDto)))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andReturn();
+
+        //then
     }
 
     @Test
     void create_whenLoginIsExists() throws Exception{
         //given
-        String loginToCheck = "starleken";
+        UserEntity savedUser = helper.saveUser();
 
-        UserEntity userToSave = generateUser();
-        userToSave.setLogin(loginToCheck);
-        userRepository.save(userToSave);
-
-        UserCreateDto createDto = new UserCreateDto();
-        createDto.setLogin(loginToCheck);
-        createDto.setPassword("password");
-        createDto.setEmail("starleken@mail.ru");
-        createDto.setImageURL("https://image.jpg");
+        UserCreateDto createDto = generateUserCreateDto();
+        createDto.setLogin(savedUser.getLogin());
 
         //when
         mockMvc.perform(MockMvcRequestBuilders.post("/user")
@@ -186,17 +190,10 @@ public class UserControllerTest {
     @Test
     void create_whenEmailIsExists() throws Exception {
         //given
-        String emailToCheck = "starleken@mail.ru";
+        UserEntity savedUser = helper.saveUser();
 
-        UserEntity userToSave = generateUser();
-        userToSave.setEmail(emailToCheck);
-        userRepository.save(userToSave);
-
-        UserCreateDto createDto = new UserCreateDto();
-        createDto.setLogin("starleken");
-        createDto.setPassword("password");
-        createDto.setEmail(emailToCheck);
-        createDto.setImageURL("https://image.jpg");
+        UserCreateDto createDto = generateUserCreateDto();
+        createDto.setEmail(savedUser.getEmail());
 
         //when
         mockMvc.perform(MockMvcRequestBuilders.post("/user")
@@ -211,15 +208,8 @@ public class UserControllerTest {
     @Test
     void update_happyPath() throws Exception{
         //given
-        String imageToCheck = "http://image.jpg";
-
-        UserEntity userToSave = generateUser();
-        UserEntity savedUser = userRepository.save(userToSave);
-
-        UserUpdateDto updateDto = new UserUpdateDto();
-        updateDto.setId(savedUser.getId());
-        updateDto.setEmail(savedUser.getEmail());
-        updateDto.setImageUrl(imageToCheck);
+        UserEntity savedUser = helper.saveUser();
+        UserUpdateDto updateDto = generateUserUpdateDto(savedUser.getId());
 
         //when
         MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/user").
@@ -233,22 +223,19 @@ public class UserControllerTest {
 
         //then
         Assertions.assertNotNull(dto);
-        Assertions.assertEquals(savedUser.getId(), dto.getId());
-        Assertions.assertEquals(imageToCheck, dto.getImageURL());
+        Assertions.assertEquals(updateDto.getId(), dto.getId());
+        Assertions.assertEquals(updateDto.getImageUrl(), dto.getImageURL());
     }
 
     @Test
     void update_whenNotFound() throws Exception{
         //given
-        UserUpdateDto dto = new UserUpdateDto();
-        dto.setId(1L);
-        dto.setEmail("starleken@mail.ru");
-        dto.setImageUrl("http://image.jpg");
+        UserUpdateDto updateDto = generateUserUpdateDto(1L);
 
         //when
         mockMvc.perform(MockMvcRequestBuilders.put("/user")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(dto)))
+                .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
 
@@ -258,19 +245,31 @@ public class UserControllerTest {
     @Test
     void update_whenEmailIsTaken() throws Exception {
         //given
-        String emailToCheck = "starleken@mail.ru";
+        UserEntity savedUser = helper.saveUser();
 
-        UserEntity userToSave = generateUser();
-        userToSave.setEmail(emailToCheck);
-        userRepository.save(userToSave);
+        UserEntity userToUpdate = helper.saveUser();
 
-        UserEntity userToUpdate = generateUser();
-        UserEntity savedUser = userRepository.save(userToUpdate);
+        UserUpdateDto updateDto = generateUserUpdateDto(userToUpdate.getId());
+        updateDto.setEmail(savedUser.getEmail());
 
-        UserUpdateDto updateDto = new UserUpdateDto();
-        updateDto.setId(savedUser.getId());
-        updateDto.setEmail(emailToCheck);
-        updateDto.setImageUrl(savedUser.getImageURL());
+        //when
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/user").
+                        contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andReturn();
+
+        //then
+    }
+
+    @Test
+    void update_whenEmailIsInvalid() throws Exception {
+        //given
+        helper.saveUser();
+
+        UserEntity userToUpdate = helper.saveUser();
+
+        UserUpdateDto updateDto = generateInvalidUserUpdateDto(userToUpdate.getId());
 
         //when
         MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/user").
@@ -285,40 +284,27 @@ public class UserControllerTest {
     @Test
     void changePassword_happyPath() throws Exception{
         //given
-        String oldPassword = "old";
-        String newPassword = "new";
-
-        UserEntity userToSave = generateUser();
-        userToSave.setPassword(oldPassword);
-        UserEntity savedUser = userRepository.save(userToSave);
-
-        ChangePasswordDto dto = new ChangePasswordDto();
-        dto.setOldPassword(oldPassword);
-        dto.setNewPassword(newPassword);
-        dto.setId(savedUser.getId());
+        UserEntity savedUser = helper.saveUser();
+        ChangePasswordDto changeDto = generateChangePasswordDto(savedUser.getId(), savedUser.getPassword());
 
         //when
         mockMvc.perform(MockMvcRequestBuilders.put("/user/password")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+                        .content(objectMapper.writeValueAsString(changeDto)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        Optional<UserEntity> findedUser = userRepository
-                .findById(dto.getId());
+        Optional<UserEntity> findedUser = helper.findUserById(savedUser.getId());
 
         //then
         Assertions.assertNotNull(findedUser);
-        Assertions.assertEquals(newPassword, findedUser.get().getPassword());
+        Assertions.assertEquals(changeDto.getNewPassword(), findedUser.get().getPassword());
     }
 
     @Test
     void changePassword_whenNotFound() throws Exception{
         //given
-        ChangePasswordDto dto = new ChangePasswordDto();
-        dto.setId(5L);
-        dto.setOldPassword("old");
-        dto.setNewPassword("new");
+        ChangePasswordDto dto = generateChangePasswordDto(5L, "starleken");
 
         //when
         mockMvc.perform(MockMvcRequestBuilders.put("/user/password")
@@ -333,22 +319,14 @@ public class UserControllerTest {
     @Test
     void changePassword_whenIncorrectPassword() throws Exception{
         //given
-        String oldPassword = "old";
-        String newPassword = "new";
-
-        UserEntity userToSave = generateUser();
-        userToSave.setPassword(oldPassword);
-        UserEntity savedUser = userRepository.save(userToSave);
-
-        ChangePasswordDto dto = new ChangePasswordDto();
-        dto.setOldPassword(oldPassword + "incorrect");
-        dto.setNewPassword(newPassword);
-        dto.setId(savedUser.getId());
+        UserEntity savedUser = helper.saveUser();
+        ChangePasswordDto changeDto = generateChangePasswordDto(
+                savedUser.getId(), savedUser.getPassword() + "1241");
 
         //when
         mockMvc.perform(MockMvcRequestBuilders.put("/user/password")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+                        .content(objectMapper.writeValueAsString(changeDto)))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andReturn();
 
@@ -358,8 +336,7 @@ public class UserControllerTest {
     @Test
     void deleteById_happyPath() throws Exception{
         //given
-        UserEntity userToSave = generateUser();
-        UserEntity savedUser = userRepository.save(userToSave);
+        UserEntity savedUser = helper.saveUser();
 
         //when
         mockMvc.perform(MockMvcRequestBuilders.delete("/user/{id}",
@@ -367,7 +344,7 @@ public class UserControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        Optional<UserEntity> findedUser = userRepository.findById(savedUser.getId());
+        Optional<UserEntity> findedUser = helper.findUserById(savedUser.getId());
 
         //then
         Assertions.assertTrue(findedUser.isEmpty());
