@@ -18,7 +18,7 @@ import java.util.List;
 
 @Tag(name = "Channel")
 @RestController
-@RequestMapping("/channel")
+@RequestMapping("/channels")
 public class ChannelController {
 
     private ChannelService channelService;

@@ -1,6 +1,7 @@
 package com.starleken.springchannel.core.utils.dtoUtils;
 
 import com.github.javafaker.Faker;
+import com.starleken.springchannel.core.utils.FakerUtils;
 import com.starleken.springchannel.dto.user.ChangePasswordDto;
 import com.starleken.springchannel.dto.user.UserCreateDto;
 import com.starleken.springchannel.dto.user.UserUpdateDto;
@@ -9,7 +10,7 @@ import org.apache.catalina.User;
 public abstract class UserDtoUtls {
 
     public static UserCreateDto generateUserCreateDto(){
-        Faker faker = new Faker();
+        Faker faker = FakerUtils.FAKER;
 
         UserCreateDto dto = new UserCreateDto();
 
@@ -29,7 +30,7 @@ public abstract class UserDtoUtls {
     }
 
     public static UserUpdateDto generateUserUpdateDto(Long id){
-        Faker faker = new Faker();
+        Faker faker = FakerUtils.FAKER;
 
         UserUpdateDto dto = new UserUpdateDto();
         dto.setId(id);
@@ -47,7 +48,7 @@ public abstract class UserDtoUtls {
     }
 
     public static ChangePasswordDto generateChangePasswordDto(Long userId, String oldPassword){
-        Faker faker = new Faker();
+        Faker faker = FakerUtils.FAKER;
 
         ChangePasswordDto dto = new ChangePasswordDto();
         dto.setId(userId);

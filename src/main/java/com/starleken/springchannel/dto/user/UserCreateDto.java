@@ -20,5 +20,6 @@ public class UserCreateDto {
 
     @Schema(example = "starleken@mail.ru", description = "must be unique")
     @Email(message = "Incorrect email format")
+    @NotBlank(message = "Email must be")
     private String email;
 }

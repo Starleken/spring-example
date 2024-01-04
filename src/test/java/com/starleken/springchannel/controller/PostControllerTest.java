@@ -2,13 +2,12 @@ package com.starleken.springchannel.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.starleken.springchannel.core.db.PostDbHelper;
 import com.starleken.springchannel.dto.post.PostCreateDto;
 import com.starleken.springchannel.dto.post.PostFullDto;
 import com.starleken.springchannel.dto.post.PostUpdateDto;
 import com.starleken.springchannel.entity.ChannelEntity;
 import com.starleken.springchannel.entity.PostEntity;
-import com.starleken.springchannel.repository.ChannelRepository;
-import com.starleken.springchannel.repository.PostRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,45 +23,38 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import java.util.List;
 import java.util.Optional;
 
-import static com.starleken.springchannel.EntityGenerationUtils.*;
+import static com.starleken.springchannel.core.utils.dtoUtils.PostDtoUtils.generateCreateDto;
+import static com.starleken.springchannel.core.utils.dtoUtils.PostDtoUtils.generateUpdateDto;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class PostControllerTest {
 
-    private PostRepository postRepository;
-    private ChannelRepository channelRepository;
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
+    private PostDbHelper dbHelper;
+
     @Autowired
-    public PostControllerTest(ChannelRepository channelRepository, PostRepository postRepository, MockMvc mockMvc, ObjectMapper objectMapper) {
-        this.postRepository = postRepository;
+    public PostControllerTest(PostDbHelper helper,MockMvc mockMvc, ObjectMapper objectMapper) {
         this.mockMvc = mockMvc;
         this.objectMapper = objectMapper;
-        this.channelRepository = channelRepository;
+        this.dbHelper = helper;
     }
 
     @BeforeEach
     void setUp() {
-        postRepository.deleteAll();
-        channelRepository.deleteAll();
+        dbHelper.clearDB();
     }
 
     @Test
     void findAll_happyPath() throws Exception{
         //given
-        ChannelEntity channel = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channel);
-        List<PostEntity> posts = generatePosts();
-
-        for (PostEntity post : posts){
-            post.setChannel(savedChannel);
-        }
-        postRepository.saveAll(posts);
+        dbHelper.savePost();
+        dbHelper.savePost();
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/post"))
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/posts"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
@@ -73,21 +65,16 @@ public class PostControllerTest {
 
         //then
         Assertions.assertNotNull(postFullDtos);
-        Assertions.assertEquals(3, postFullDtos.size());
+        Assertions.assertEquals(2, postFullDtos.size());
     }
 
     @Test
     void findById_happyPath() throws Exception {
         //given
-        ChannelEntity channelToSave = generateChannel();
-        channelRepository.save(channelToSave);
-
-        PostEntity postToSave = generatePost();
-        postToSave.setChannel(channelToSave);
-        PostEntity savedPost = postRepository.save(postToSave);
+        PostEntity savedPost = dbHelper.savePost();
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/post/{id}",
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/posts/{id}",
                         savedPost.getId()))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
@@ -108,7 +95,7 @@ public class PostControllerTest {
         long idForSearch = 5L;
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.get("/post/{id}",
+        mockMvc.perform(MockMvcRequestBuilders.get("/posts/{id}",
                         idForSearch))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
@@ -119,16 +106,11 @@ public class PostControllerTest {
     @Test
     void create_happyPath() throws Exception{
         //given
-        ChannelEntity channelToSave = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channelToSave);
-
-        PostCreateDto createDto = new PostCreateDto();
-        createDto.setTitle("Title");
-        createDto.setContent("Content");
-        createDto.setChannelId(savedChannel.getId());
+        ChannelEntity savedChannel = dbHelper.saveChannel();
+        PostCreateDto createDto = generateCreateDto(savedChannel.getId());
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/post")
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/posts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(MockMvcResultMatchers.status().isCreated())
@@ -147,13 +129,10 @@ public class PostControllerTest {
     @Test
     void create_whenChannelNotFound() throws Exception{
         //given
-        PostCreateDto createDto = new PostCreateDto();
-        createDto.setTitle("title");
-        createDto.setContent("content");
-        createDto.setChannelId(1L);
+        PostCreateDto createDto = generateCreateDto(1L);
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.post("/post")
+        mockMvc.perform(MockMvcRequestBuilders.post("/posts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
@@ -165,22 +144,11 @@ public class PostControllerTest {
     @Test
     void update_happyPath() throws Exception{
         //given
-        String titleForCheck = "new title";
-
-        ChannelEntity channel = generateChannel();
-        channelRepository.save(channel);
-
-        PostEntity postToSave = generatePost();
-        postToSave.setChannel(channel);
-        PostEntity savedPost = postRepository.save(postToSave);
-
-        PostUpdateDto updateDto = new PostUpdateDto();
-        updateDto.setId(savedPost.getId());
-        updateDto.setTitle(titleForCheck);
-        updateDto.setContent(savedPost.getContent());
+        PostEntity savedPost = dbHelper.savePost();
+        PostUpdateDto updateDto = generateUpdateDto(savedPost.getId());
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/post")
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/posts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
@@ -198,13 +166,10 @@ public class PostControllerTest {
     @Test
     void update_whenNotFound() throws Exception{
         //given
-        PostUpdateDto updateDto = new PostUpdateDto();
-        updateDto.setId(5L);
-        updateDto.setTitle("Title");
-        updateDto.setContent("Content");
+        PostUpdateDto updateDto = generateUpdateDto(1L);
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.put("/post")
+        mockMvc.perform(MockMvcRequestBuilders.put("/posts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
@@ -216,21 +181,15 @@ public class PostControllerTest {
     @Test
     void deleteById_happyPath() throws Exception{
         //given
-        ChannelEntity channel = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channel);
-
-        PostEntity postToSave = generatePost();
-        postToSave.setChannel(savedChannel);
-        PostEntity savedPost = postRepository.save(postToSave);
+        PostEntity savedPost = dbHelper.savePost();
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.delete("/post/{id}",
+        mockMvc.perform(MockMvcRequestBuilders.delete("/posts/{id}",
                         savedPost.getId()))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        Optional<PostEntity> findedPost = postRepository
-                .findById(savedPost.getId());
+        Optional<PostEntity> findedPost = dbHelper.findById(savedPost.getId());
 
         //then
         Assertions.assertTrue(findedPost.isEmpty());
@@ -242,7 +201,7 @@ public class PostControllerTest {
         long idForSearch = 10L;
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.delete("/post/{id}",
+        mockMvc.perform(MockMvcRequestBuilders.delete("/posts/{id}",
                         idForSearch))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();

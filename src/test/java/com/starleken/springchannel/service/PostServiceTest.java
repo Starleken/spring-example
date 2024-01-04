@@ -5,54 +5,52 @@ import com.starleken.springchannel.dto.post.PostFullDto;
 import com.starleken.springchannel.dto.post.PostUpdateDto;
 import com.starleken.springchannel.entity.ChannelEntity;
 import com.starleken.springchannel.entity.PostEntity;
-import com.starleken.springchannel.exception.entityNotFound.ChannelIsNotFoundException;
-import com.starleken.springchannel.exception.entityNotFound.PostIsNotFoundException;
+import com.starleken.springchannel.exception.entityNotFound.EntityIsNotFoundException;
+import com.starleken.springchannel.mapper.PostMapper;
 import com.starleken.springchannel.repository.ChannelRepository;
 import com.starleken.springchannel.repository.PostRepository;
+import com.starleken.springchannel.service.impl.PostServiceImpl;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
 
-import static com.starleken.springchannel.EntityGenerationUtils.generateChannel;
-import static com.starleken.springchannel.EntityGenerationUtils.generatePost;
+import static com.starleken.springchannel.core.utils.dtoUtils.PostDtoUtils.*;
+import static com.starleken.springchannel.core.utils.entityUtils.ChannelEntityUtils.generateChannel;
+import static com.starleken.springchannel.core.utils.entityUtils.PostEntityUtils.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class PostServiceTest {
 
+    @Mock
     private PostRepository postRepository;
-    private PostService postService;
+
+    @Mock
     private ChannelRepository channelRepository;
 
-    @Autowired
-    public PostServiceTest(ChannelRepository channelRepository, PostRepository postRepository, PostService postService) {
-        this.postRepository = postRepository;
-        this.postService = postService;
-        this.channelRepository = channelRepository;
-    }
+    @Spy
+    private PostMapper mapper = Mappers.getMapper(PostMapper.class);
 
-    @BeforeEach
-    void setUp() {
-        channelRepository.deleteAll();
-        postRepository.deleteAll();
-    }
+    @InjectMocks
+    private PostServiceImpl postService;
 
     @Test
     void findAll_happyPath() {
         //given
-        ChannelEntity channel = generateChannel();
-        PostEntity post1 = generatePost();
-        PostEntity post2 = generatePost();
-        ChannelEntity savedChannel = channelRepository.save(channel);
-        post1.setChannel(channel);
-        post2.setChannel(channel);
+        PostEntity savedPost1 = generatePostWithId();
+        PostEntity savedPost2 = generatePostWithId();
 
-        postRepository.save(post1);
-        postRepository.save(post2);
+        when(postRepository.findAll()).thenReturn(List.of(savedPost1, savedPost2));
 
         //when
         List<PostFullDto> findedPosts = postService.findAll();
@@ -65,11 +63,9 @@ public class PostServiceTest {
     @Test
     void findById_happyPath() {
         //given
-        ChannelEntity channel = generateChannel();
-        PostEntity post1 = generatePost();
-        ChannelEntity savedChannel = channelRepository.save(channel);
-        post1.setChannel(channel);
-        PostEntity savedPost = postRepository.save(post1);
+        PostEntity savedPost = generatePostWithId();
+
+        when(postRepository.findById(savedPost.getId())).thenReturn(Optional.of(savedPost));
 
         //when
         PostFullDto findedPost = postService.findById(savedPost.getId());
@@ -82,76 +78,57 @@ public class PostServiceTest {
     @Test
     void findById_whenNotFound() {
         //given
-        Long idForSearch = 1L;
-        boolean isNotFound = false;
+        PostEntity postToSearch = generatePostWithId();
+
+        when(postRepository.findById(postToSearch.getId())).thenReturn(Optional.empty());
 
         //when
-        try{
-            postService.findById(idForSearch);
-        } catch(PostIsNotFoundException ex){
-            isNotFound = true;
-        }
+        Assertions.assertThrows(EntityIsNotFoundException.class,
+                () -> postService.findById(postToSearch.getId()));
 
         //then
-        Assertions.assertTrue(isNotFound);
     }
 
     @Test
     void create_happyPath(){
         //given
-        ChannelEntity channelToSave = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channelToSave);
+        ChannelEntity postChannel = generateChannel();
+        PostCreateDto createDto = generateCreateDto(postChannel.getId());
 
-        PostCreateDto dto = new PostCreateDto();
-        dto.setTitle("Title");
-        dto.setContent("Content");
-        dto.setChannelId(savedChannel.getId());
+        when(postRepository.save(Mockito.any(PostEntity.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(channelRepository.findById(createDto.getChannelId())).thenReturn(Optional.of(postChannel));
 
         //when
-        PostFullDto postFullDto = postService.create(dto);
+        PostFullDto postFullDto = postService.create(createDto);
 
         //then
         Assertions.assertNotNull(postFullDto);
-        Assertions.assertEquals(dto.getTitle(), postFullDto.getTitle());
-        Assertions.assertEquals(dto.getChannelId(), postFullDto.getChannelId());
+        Assertions.assertEquals(createDto.getTitle(), postFullDto.getTitle());
+        Assertions.assertEquals(createDto.getChannelId(), postFullDto.getChannelId());
     }
 
     @Test
     void create_whenChannelIsNotFound() {
         //given
-        PostCreateDto dto = new PostCreateDto();
-        dto.setTitle("1");
-        dto.setContent("124");
-        dto.setChannelId(5L);
+        PostCreateDto createDto = generateCreateDto(1L);
 
-        boolean channelNotIsFound = false;
+        when(channelRepository.findById(createDto.getChannelId())).thenReturn(Optional.empty());
 
         //when
-        try{
-            postService.create(dto);
-        } catch (ChannelIsNotFoundException ex){
-            channelNotIsFound = true;
-        }
+        Assertions.assertThrows(EntityIsNotFoundException.class,
+                () -> postService.create(createDto));
 
         //then
-        Assertions.assertTrue(channelNotIsFound);
     }
 
     @Test
     void update_happyPath() {
         //given
-        String newTitle = "New title";
+        PostEntity post = generatePostWithId();
+        PostUpdateDto updateDto = generateUpdateDto(post.getId());
 
-        ChannelEntity channelToSave = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channelToSave);
-        PostEntity postToSave = generatePost();
-        postToSave.setChannel(savedChannel);
-        PostEntity savedPost = postRepository.save(postToSave);
-
-        PostUpdateDto updateDto = new PostUpdateDto();
-        updateDto.setId(savedPost.getId());
-        updateDto.setTitle(newTitle);
-        updateDto.setContent(savedPost.getContent());
+        when(postRepository.findById(post.getId())).thenReturn(Optional.of(post));
+        when(postRepository.save(Mockito.any(PostEntity.class))).thenAnswer(i -> i.getArguments()[0]);
 
         //when
         PostFullDto fullDto = postService.update(updateDto);
@@ -159,60 +136,49 @@ public class PostServiceTest {
         //then
         Assertions.assertNotNull(fullDto);
         Assertions.assertEquals(updateDto.getId(), fullDto.getId());
-        Assertions.assertEquals(newTitle, fullDto.getTitle());
+        Assertions.assertEquals(updateDto.getTitle(), fullDto.getTitle());
     }
 
     @Test
     void update_whenNotFound(){
         //given
-        PostUpdateDto dto = new PostUpdateDto();
-        dto.setId(1L);
-        dto.setTitle("Title");
-        dto.setContent("Content");
+        PostEntity postToSearch = generatePostWithId();
+        PostUpdateDto updateDto = generateUpdateDto(postToSearch.getId());
 
-        boolean isNotFound = false;
+        when(postRepository.findById(updateDto.getId())).thenReturn(Optional.empty());
 
         //when
-        try{
-            postService.update(dto);
-        } catch (PostIsNotFoundException ex){
-            isNotFound = true;
-        }
+        Assertions.assertThrows(EntityIsNotFoundException.class,
+                () -> postService.update(updateDto));
 
-        Assertions.assertTrue(isNotFound);
+        //then
     }
 
     @Test
     void deleteById_happyPath() {
         //given
-        ChannelEntity channel = generateChannel();
-        PostEntity post = generatePost();
-        ChannelEntity savedChannel = channelRepository.save(channel);
-        post.setChannel(channel);
-        PostEntity savedPost = postRepository.save(post);
+        PostEntity postToDelete = generatePostWithId();
+
+        when(postRepository.findById(postToDelete.getId())).thenReturn(Optional.of(postToDelete));
 
         //when
-        postService.deleteById(savedPost.getId());
-        Optional<PostEntity> findedPost = postRepository.findById(savedPost.getId());
+        postService.deleteById(postToDelete.getId());
 
         //then
-        Assertions.assertTrue(findedPost.isEmpty());
+        verify(postRepository).deleteById(postToDelete.getId());
     }
 
     @Test
     void deleteById_whenNotFound() {
         //given
-        long idForSeach = 5L;
+        long idToSearch = 5L;
 
-        boolean isNotFound = false;
+        when(postRepository.findById(idToSearch)).thenReturn(Optional.empty());
 
         //when
-        try{
-            postService.deleteById(idForSeach);
-        } catch (PostIsNotFoundException ex){
-            isNotFound = true;
-        }
+        Assertions.assertThrows(EntityIsNotFoundException.class,
+                () -> postService.deleteById(idToSearch));
 
-        Assertions.assertTrue(isNotFound);
+        //then
     }
 }

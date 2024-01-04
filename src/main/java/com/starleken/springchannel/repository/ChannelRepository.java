@@ -6,5 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ChannelRepository extends JpaRepository<ChannelEntity, Long> {
+
     ChannelEntity findOneByName(String name);
 }

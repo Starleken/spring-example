@@ -3,13 +3,11 @@ package com.starleken.springchannel.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.starleken.springchannel.core.db.UserDbHelper;
-import com.starleken.springchannel.core.utils.dtoUtils.UserDtoUtls;
 import com.starleken.springchannel.dto.user.ChangePasswordDto;
 import com.starleken.springchannel.dto.user.UserCreateDto;
 import com.starleken.springchannel.dto.user.UserFullDto;
 import com.starleken.springchannel.dto.user.UserUpdateDto;
 import com.starleken.springchannel.entity.UserEntity;
-import com.starleken.springchannel.repository.UserRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +52,7 @@ public class UserControllerTest {
         helper.saveUser();
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/user"))
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/users"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
@@ -74,7 +72,7 @@ public class UserControllerTest {
         UserEntity savedUser = helper.saveUser();
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/{id}",
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/users/{id}",
                         savedUser.getId()))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
@@ -93,7 +91,7 @@ public class UserControllerTest {
         long idToSearch = 5L;
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/{id}",
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/users/{id}",
                         idToSearch))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
@@ -107,7 +105,7 @@ public class UserControllerTest {
         UserEntity savedUser = helper.saveUser();
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/login?login={login}",
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/users/login?login={login}",
                         savedUser.getLogin()))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
@@ -126,7 +124,7 @@ public class UserControllerTest {
         String loginToSearch = "starleken";
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.get("/user/login?login={login}",
+        mockMvc.perform(MockMvcRequestBuilders.get("/users/login?login={login}",
                         loginToSearch))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
@@ -140,7 +138,7 @@ public class UserControllerTest {
         UserCreateDto createDto = generateUserCreateDto();
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/user")
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(MockMvcResultMatchers.status().isCreated())
@@ -160,7 +158,7 @@ public class UserControllerTest {
         UserCreateDto createDto = generateInvalidUserCreateDto();
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.post("/user")
+        mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
@@ -178,7 +176,7 @@ public class UserControllerTest {
         createDto.setLogin(savedUser.getLogin());
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.post("/user")
+        mockMvc.perform(MockMvcRequestBuilders.post("/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
@@ -196,7 +194,7 @@ public class UserControllerTest {
         createDto.setEmail(savedUser.getEmail());
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.post("/user")
+        mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
@@ -212,7 +210,7 @@ public class UserControllerTest {
         UserUpdateDto updateDto = generateUserUpdateDto(savedUser.getId());
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/user").
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/users").
                         contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
@@ -233,7 +231,7 @@ public class UserControllerTest {
         UserUpdateDto updateDto = generateUserUpdateDto(1L);
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.put("/user")
+        mockMvc.perform(MockMvcRequestBuilders.put("/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
@@ -253,7 +251,7 @@ public class UserControllerTest {
         updateDto.setEmail(savedUser.getEmail());
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/user").
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/users").
                         contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
@@ -272,7 +270,7 @@ public class UserControllerTest {
         UserUpdateDto updateDto = generateInvalidUserUpdateDto(userToUpdate.getId());
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/user").
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/users").
                         contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
@@ -288,7 +286,7 @@ public class UserControllerTest {
         ChangePasswordDto changeDto = generateChangePasswordDto(savedUser.getId(), savedUser.getPassword());
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.put("/user/password")
+        mockMvc.perform(MockMvcRequestBuilders.put("/users/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(changeDto)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
@@ -307,7 +305,7 @@ public class UserControllerTest {
         ChangePasswordDto dto = generateChangePasswordDto(5L, "starleken");
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.put("/user/password")
+        mockMvc.perform(MockMvcRequestBuilders.put("/users/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
@@ -324,7 +322,7 @@ public class UserControllerTest {
                 savedUser.getId(), savedUser.getPassword() + "1241");
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.put("/user/password")
+        mockMvc.perform(MockMvcRequestBuilders.put("/users/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(changeDto)))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
@@ -339,7 +337,7 @@ public class UserControllerTest {
         UserEntity savedUser = helper.saveUser();
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.delete("/user/{id}",
+        mockMvc.perform(MockMvcRequestBuilders.delete("/users/{id}",
                 savedUser.getId()))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
@@ -356,7 +354,7 @@ public class UserControllerTest {
         long idForDelete = 5L;
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.delete("/user/{id}",
+        mockMvc.perform(MockMvcRequestBuilders.delete("/users/{id}",
                         idForDelete))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();

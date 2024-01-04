@@ -1,50 +1,61 @@
 package com.starleken.springchannel.service;
 
+import com.starleken.springchannel.core.utils.dtoUtils.ChannelDtoUtils;
 import com.starleken.springchannel.dto.channel.ChannelCreateDto;
 import com.starleken.springchannel.dto.channel.ChannelFullDto;
 import com.starleken.springchannel.dto.channel.ChannelPreviewDto;
 import com.starleken.springchannel.dto.channel.ChannelUpdateDto;
 import com.starleken.springchannel.entity.ChannelEntity;
 import com.starleken.springchannel.entity.ChannelEntityType;
-import com.starleken.springchannel.exception.entityCredentials.ChannelCredentialsAreTakenException;
-import com.starleken.springchannel.exception.entityNotFound.ChannelIsNotFoundException;
+import com.starleken.springchannel.exception.entityCredentials.EntityCredentialsAreTakenException;
+import com.starleken.springchannel.exception.entityField.EntityFieldIsTakenException;
+import com.starleken.springchannel.exception.entityNotFound.EntityIsNotFoundException;
+import com.starleken.springchannel.mapper.ChannelMapper;
+import com.starleken.springchannel.mapper.UserMapper;
 import com.starleken.springchannel.repository.ChannelRepository;
+import com.starleken.springchannel.service.impl.ChannelServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 import java.util.Optional;
 
-import static com.starleken.springchannel.EntityGenerationUtils.*;
+import static com.starleken.springchannel.core.utils.dtoUtils.ChannelDtoUtils.generateChannelCreateDto;
+import static com.starleken.springchannel.core.utils.dtoUtils.ChannelDtoUtils.generateChannelUpdateDto;
+import static com.starleken.springchannel.core.utils.entityUtils.ChannelEntityUtils.generateChannel;
+import static com.starleken.springchannel.core.utils.entityUtils.ChannelEntityUtils.generateChannelWithId;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class ChannelServiceTest {
 
-    private ChannelService channelService;
-    private ChannelRepository channelRepository;
+    @Mock
+    private ChannelRepository repository;
 
-    @Autowired
-    public ChannelServiceTest(ChannelService channelService, ChannelRepository channelRepository) {
-        this.channelService = channelService;
-        this.channelRepository = channelRepository;
-    }
+    @Spy
+    private ChannelMapper mapper = Mappers.getMapper(ChannelMapper.class);
 
-    @BeforeEach
-    void setUp() {
-        channelRepository.deleteAll();
-    }
+    @InjectMocks
+    private ChannelServiceImpl channelService;
 
     @Test
     void findAll_happyPath() {
         //given
-        ChannelEntity channel1 = generateChannel();
-        ChannelEntity channel2 = generateChannel();
+        ChannelEntity savedChannel1 = generateChannelWithId();
+        ChannelEntity savedChannel2 = generateChannelWithId();
 
-        channelRepository.save(channel1);
-        channelRepository.save(channel2);
+        when(repository.findAll()).thenReturn(List.of(savedChannel1, savedChannel2));
 
         //when
         List<ChannelPreviewDto> findedChannels = channelService.findAll();
@@ -57,40 +68,38 @@ public class ChannelServiceTest {
     @Test
     void findById_happyPath() {
         //given
-        ChannelEntity channelToSave = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channelToSave);
+        ChannelEntity channelToFind = generateChannelWithId();
+
+        when(repository.findById(channelToFind.getId())).thenReturn(Optional.of(channelToFind));
 
         //when
-        ChannelFullDto findedChannel = channelService.findById(savedChannel.getId());
+        ChannelFullDto findedChannel = channelService.findById(channelToFind.getId());
 
         //then
         Assertions.assertNotNull(findedChannel);
-        Assertions.assertEquals(savedChannel.getId(), findedChannel.getId());
-        Assertions.assertEquals(savedChannel.getName(), findedChannel.getName());
+        Assertions.assertEquals(channelToFind.getId(), findedChannel.getId());
+        Assertions.assertEquals(channelToFind.getName(), findedChannel.getName());
     }
 
     @Test
     void findById_whenNotFound() {
         //given
-        Long idForSearch = 5L;
-        boolean isNotFound = false;
+        Long idToSearch = 5L;
+        when(repository.findById(idToSearch)).thenReturn(Optional.empty());
 
         //when
-        try{
-            channelService.findById(idForSearch);
-        } catch (ChannelIsNotFoundException ex){
-            isNotFound = true;
-        }
+        Assertions.assertThrows(EntityIsNotFoundException.class,
+                () -> channelService.findById(idToSearch));
 
-        Assertions.assertTrue(isNotFound);
+        //then
     }
 
     @Test
     void create_happyPath() {
         //given
-        ChannelCreateDto createDto = new ChannelCreateDto();
-        createDto.setName("Name");
-        createDto.setType(ChannelEntityType.TOURISM);
+        ChannelCreateDto createDto = generateChannelCreateDto();
+
+        when(repository.save(Mockito.any(ChannelEntity.class))).thenAnswer(i -> i.getArguments()[0]);
 
         //when
         ChannelFullDto createdChannel = channelService.create(createDto);
@@ -104,36 +113,27 @@ public class ChannelServiceTest {
     @Test
     void create_whenNameIsExists() {
         //given
-        ChannelEntity channel = generateChannel();
-        channel.setName("Name");
-        channelRepository.save(channel);
+        ChannelEntity savedChannel = generateChannelWithId();
+        ChannelCreateDto createDto = generateChannelCreateDto();
+        createDto.setName(savedChannel.getName());
 
-        ChannelCreateDto createDto = new ChannelCreateDto();
-        createDto.setName("Name");
-        createDto.setType(ChannelEntityType.TOURISM);
-
-        boolean isNotCreated = false;
+        when(repository.findOneByName(savedChannel.getName())).thenReturn(savedChannel);
 
         //when
-        try{
-            channelService.create(createDto);
-        } catch (ChannelCredentialsAreTakenException ex){
-            isNotCreated = true;
-        }
+        Assertions.assertThrows(EntityFieldIsTakenException.class,
+                () -> channelService.create(createDto));
 
         //then
-        Assertions.assertTrue(isNotCreated);
     }
 
     @Test
     void update_happyPath() {
         //given
-        ChannelEntity channelToSave = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channelToSave);
-        ChannelUpdateDto updateDto = new ChannelUpdateDto();
-        updateDto.setId(savedChannel.getId());
-        updateDto.setName("Name");
-        updateDto.setType(ChannelEntityType.TOURISM);
+        ChannelEntity channelToUpdate = generateChannelWithId();
+        ChannelUpdateDto updateDto = generateChannelUpdateDto(channelToUpdate.getId());
+
+        when(repository.findById(channelToUpdate.getId())).thenReturn(Optional.of(channelToUpdate));
+        when(repository.save(Mockito.any(ChannelEntity.class))).thenAnswer(i -> i.getArguments()[0]);
 
         //when
         ChannelFullDto updatedChannel = channelService.update(updateDto);
@@ -147,84 +147,60 @@ public class ChannelServiceTest {
     @Test
     void update_whenNotFound() {
         //given
-        ChannelUpdateDto updateDto = new ChannelUpdateDto();
-        updateDto.setId(5L);
-        updateDto.setName("Name");
-        updateDto.setType(ChannelEntityType.TOURISM);
+        ChannelUpdateDto updateDto = generateChannelUpdateDto(1L);
 
-        boolean isNotFound = false;
+        when(repository.findById(updateDto.getId())).thenReturn(Optional.empty());
 
         //when
-        try{
-            channelService.update(updateDto);
-        } catch (ChannelIsNotFoundException ex){
-            isNotFound = true;
-        }
+        Assertions.assertThrows(EntityIsNotFoundException.class,
+                () -> channelService.update(updateDto));
 
         //then
-        Assertions.assertTrue(isNotFound);
-
     }
 
     @Test
     void update_whenNameIsExists() {
         //given
-        String nameForCheck = "Name";
+        ChannelEntity savedChannel = generateChannelWithId();
+        ChannelEntity channelToUpdate = generateChannelWithId();
+        ChannelUpdateDto updateDto = generateChannelUpdateDto(channelToUpdate.getId());
+        updateDto.setName(savedChannel.getName());
 
-        ChannelEntity channel = generateChannel();
-        channel.setName(nameForCheck);
-        channelRepository.save(channel);
-
-        ChannelEntity channelToSave = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channelToSave);
-        ChannelUpdateDto updateDto = new ChannelUpdateDto();
-        updateDto.setId(savedChannel.getId());
-        updateDto.setName(nameForCheck);
-        updateDto.setType(ChannelEntityType.TOURISM);
-
-        boolean isNotUpdated = false;
+        when(repository.findById(updateDto.getId())).thenReturn(Optional.of(channelToUpdate));
+        when(repository.findOneByName(updateDto.getName())).thenReturn(savedChannel);
 
         //when
-        try{
-            channelService.update(updateDto);
-        } catch (ChannelCredentialsAreTakenException ex){
-            isNotUpdated = true;
-        }
+        Assertions.assertThrows(EntityFieldIsTakenException.class,
+                () -> channelService.update(updateDto));
 
         //then
-        Assertions.assertTrue(isNotUpdated);
     }
 
     @Test
     void deleteById_happyPath() {
         //given
-        ChannelEntity channelToSave = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channelToSave);
+        ChannelEntity savedChannel = generateChannelWithId();
+
+        when(repository.findById(savedChannel.getId())).thenReturn(Optional.of(savedChannel));
 
         //when
         channelService.deleteById(savedChannel.getId());
-        Optional<ChannelEntity> findedChannel = channelRepository
-                .findById(savedChannel.getId());
 
         //then
-        Assertions.assertTrue(findedChannel.isEmpty());
+        verify(repository).deleteById(savedChannel.getId());
     }
 
     @Test
     void deleteById_whenNotFound() {
         //given
-        Long idForSearch = 5L;
+        Long idToSearch = 5L;
 
-        boolean isNotFound = false;
+        when(repository.findById(idToSearch)).thenReturn(Optional.empty());
 
         //when
-        try{
-            channelService.deleteById(idForSearch);
-        } catch (ChannelIsNotFoundException ex){
-            isNotFound = true;
-        }
+        Assertions.assertThrows(EntityIsNotFoundException.class,
+                () -> channelService.deleteById(idToSearch));
 
         //then
-        Assertions.assertTrue(isNotFound);
     }
 }

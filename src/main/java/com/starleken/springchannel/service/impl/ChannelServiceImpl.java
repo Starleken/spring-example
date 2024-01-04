@@ -5,8 +5,6 @@ import com.starleken.springchannel.dto.channel.ChannelFullDto;
 import com.starleken.springchannel.dto.channel.ChannelPreviewDto;
 import com.starleken.springchannel.dto.channel.ChannelUpdateDto;
 import com.starleken.springchannel.entity.ChannelEntity;
-import com.starleken.springchannel.exception.entityCredentials.ChannelCredentialsAreTakenException;
-import com.starleken.springchannel.exception.entityNotFound.ChannelIsNotFoundException;
 import com.starleken.springchannel.mapper.ChannelMapper;
 import com.starleken.springchannel.repository.ChannelRepository;
 import com.starleken.springchannel.service.ChannelService;
@@ -15,12 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.starleken.springchannel.constants.exceptionConstants.ChannelExceptionConstants.*;
+import static com.starleken.springchannel.utils.ExceptionUtils.throwEntityNotFoundException;
+import static com.starleken.springchannel.utils.ExceptionUtils.throwNameIsTakenException;
+
 
 @Slf4j
 @Service
@@ -35,12 +34,12 @@ public class ChannelServiceImpl implements ChannelService {
     public List<ChannelPreviewDto> findAll() {
         List<ChannelEntity> foundedChannels = channelRepository.findAll();
 
-        List<ChannelPreviewDto> dtoList = foundedChannels.stream()
+        List<ChannelPreviewDto> dtos = foundedChannels.stream()
                 .map(mapper::mapToPreviewDto)
                 .collect(Collectors.toList());
 
-        log.info("ChannelServiceImpl -> findAll: found {} channels", dtoList.size());
-        return dtoList;
+        log.info("ChannelServiceImpl -> findAll: found {} channels", dtos.size());
+        return dtos;
     }
 
     @Override
@@ -50,11 +49,13 @@ public class ChannelServiceImpl implements ChannelService {
 
         if (channel.isEmpty()){
             log.info("ChannelServiceImpl -> findById: channel not found by id: {}", id);
-            throw new ChannelIsNotFoundException(getNotFoundText(id));
+            throwEntityNotFoundException(ChannelEntity.class, id);
         }
 
-        log.info("ChannelServiceImpl -> findById: found {} by id {}", channel.get(), id);
-        return mapper.mapToFullDto(channel.get());
+        ChannelFullDto channelFullDto = mapper.mapToFullDto(channel.get());
+
+        log.info("ChannelServiceImpl -> findById: found {} by id {}", channelFullDto, id);
+        return channelFullDto;
     }
 
     @Override
@@ -66,8 +67,10 @@ public class ChannelServiceImpl implements ChannelService {
 
         ChannelEntity savedChannel = channelRepository.save(channelToSave);
 
-        log.info("ChannelServiceImpl -> create: channel created: {}", savedChannel);
-        return mapper.mapToFullDto(savedChannel);
+        ChannelFullDto channelFullDto = mapper.mapToFullDto(savedChannel);
+
+        log.info("ChannelServiceImpl -> create: channel created: {}", channelFullDto);
+        return channelFullDto;
     }
 
     @Override
@@ -77,7 +80,7 @@ public class ChannelServiceImpl implements ChannelService {
 
         if (findedChannel.isEmpty()){
             log.info("ChannelServiceImpl -> update: channel is not found by id: {}", dto.getId());
-            throw new ChannelIsNotFoundException(getNotFoundText(dto.getId()));
+            throwEntityNotFoundException(ChannelEntity.class, dto.getId());
         }
 
         checkIfNameChannelIsExists(dto.getName(), dto.getId());
@@ -88,8 +91,10 @@ public class ChannelServiceImpl implements ChannelService {
 
         ChannelEntity updatedChannel = channelRepository.save(channelToUpdate);
 
-        log.info("ChannelServiceImpl -> update: channel updated: {}", updatedChannel);
-        return mapper.mapToFullDto(updatedChannel);
+        ChannelFullDto channelFullDto = mapper.mapToFullDto(updatedChannel);
+
+        log.info("ChannelServiceImpl -> update: channel updated: {}", channelFullDto);
+        return channelFullDto;
     }
 
     @Override
@@ -99,19 +104,18 @@ public class ChannelServiceImpl implements ChannelService {
 
         if (findedChannel.isEmpty()){
             log.info("ChannelServiceImpl -> deleteById: channel is not found by id: {}", id);
-            throw new ChannelIsNotFoundException(getNotFoundText(id));
+            throwEntityNotFoundException(ChannelEntity.class, id);
         }
 
-        log.info("ChannelServiceImpl -> deleteById: channel deleted by id: {}", id);
         channelRepository.deleteById(id);
+        log.info("ChannelServiceImpl -> deleteById: channel deleted by id: {}", id);
     }
 
     private void checkIfNameChannelIsExists(String name, Long id){
         ChannelEntity findedChannel = channelRepository.findOneByName(name);
 
         if (findedChannel != null && !findedChannel.getId().equals(id)){
-            throw new ChannelCredentialsAreTakenException(
-                    getNameCredentialsText());
+            throwNameIsTakenException(findedChannel.getName());
         }
     }
 }

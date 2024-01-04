@@ -1,7 +1,9 @@
 package com.starleken.springchannel.exception;
 
 import com.starleken.springchannel.exception.entityCredentials.EntityCredentialsAreTakenException;
+import com.starleken.springchannel.exception.entityField.EntityFieldIsTakenException;
 import com.starleken.springchannel.exception.entityNotFound.EntityIsNotFoundException;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,8 +27,20 @@ public class Handler {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(EntityFieldIsTakenException.class)
+    public ResponseEntity<Object> handler(EntityFieldIsTakenException ex, WebRequest request){
+        log.info(ex.getMessage());
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(IncorrectPasswordException.class)
     public ResponseEntity<Object> handler(IncorrectPasswordException ex, WebRequest request){
+        log.info(ex.getMessage());
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Object> handler(ConstraintViolationException ex, WebRequest request){
         log.info(ex.getMessage());
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }

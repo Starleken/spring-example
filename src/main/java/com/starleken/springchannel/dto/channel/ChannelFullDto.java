@@ -12,16 +12,13 @@ import java.util.List;
 @Data
 public class ChannelFullDto {
 
-    @Schema(example = "1", description = "Channel id to update")
-    @NotNull(message = "id must be")
+    @Schema(example = "1", description = "Channel id")
     private Long id;
 
     @Schema(example = "Starleken", description = "Channel name")
-    @NotBlank(message = "Name must be")
     private String name;
 
     @Schema(example = "PROGRAMMING", description = "Channel type")
-    @NotNull(message = "Type must be")
     private ChannelEntityType type;
 
     @Schema(description = "Сhannel posts")

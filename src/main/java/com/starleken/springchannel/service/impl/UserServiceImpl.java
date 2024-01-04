@@ -1,14 +1,11 @@
 package com.starleken.springchannel.service.impl;
 
-import com.starleken.springchannel.constants.exceptionConstants.UserExceptionConstants;
 import com.starleken.springchannel.dto.user.ChangePasswordDto;
 import com.starleken.springchannel.dto.user.UserCreateDto;
 import com.starleken.springchannel.dto.user.UserFullDto;
 import com.starleken.springchannel.dto.user.UserUpdateDto;
 import com.starleken.springchannel.entity.UserEntity;
 import com.starleken.springchannel.exception.IncorrectPasswordException;
-import com.starleken.springchannel.exception.entityCredentials.UserCredentialsAreTakenException;
-import com.starleken.springchannel.exception.entityNotFound.UserIsNotFoundException;
 import com.starleken.springchannel.mapper.UserMapper;
 import com.starleken.springchannel.repository.UserRepository;
 import com.starleken.springchannel.service.UserService;
@@ -17,12 +14,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.starleken.springchannel.constants.exceptionConstants.UserExceptionConstants.*;
+import static com.starleken.springchannel.utils.ExceptionUtils.*;
+import static com.starleken.springchannel.utils.ExceptionUtils.throwEmailCredentialsException;
 
 @Slf4j
 @Service
@@ -37,12 +34,12 @@ public class UserServiceImpl implements UserService {
     public List<UserFullDto> findAll() {
         List<UserEntity> foundedUsers = userRepository.findAll();
 
-        List<UserFullDto> dtoList = foundedUsers.stream()
+        List<UserFullDto> dtos = foundedUsers.stream()
                 .map(userMapper::mapToFullDto)
                 .collect(Collectors.toList());
 
-        log.info("UserServiceImpl -> found {} users", dtoList.size());
-        return dtoList;
+        log.info("UserServiceImpl -> found {} users", dtos.size());
+        return dtos;
     }
 
     @Override
@@ -52,11 +49,13 @@ public class UserServiceImpl implements UserService {
 
         if (findedUser.isEmpty()){
             log.info("UserServiceImpl -> findById: user is not found by id: {}", id);
-            throw new UserIsNotFoundException(getNotFoundText(id));
+            throwEntityNotFoundException(UserEntity.class, id);
         }
 
-        log.info("UserServiceImpl -> findById: found user {} by id: {}", findedUser.get(), id);
-        return userMapper.mapToFullDto(findedUser.get());
+        UserFullDto userFullDto = userMapper.mapToFullDto(findedUser.get());
+
+        log.info("UserServiceImpl -> findById: found user {} by id: {}", userFullDto, id);
+        return userFullDto;
     }
 
     @Override
@@ -66,11 +65,13 @@ public class UserServiceImpl implements UserService {
 
         if (findedUser == null){
             log.info("UserServiceImpl -> findByLogin: user is not found by login: {}", login);
-            throw new UserIsNotFoundException(getNotFoundTextByLogin(login));
+            throwEntityNotFoundExceptionLogin(UserEntity.class, login);
         }
 
-        log.info("UserServiceImpl -> findByLogin: user {} found by login: {}",findedUser, login);
-        return userMapper.mapToFullDto(findedUser);
+        UserFullDto userFullDto = userMapper.mapToFullDto(findedUser);
+
+        log.info("UserServiceImpl -> findByLogin: user {} found by login: {}", userFullDto, login);
+        return userFullDto;
     }
 
     @Override
@@ -83,8 +84,10 @@ public class UserServiceImpl implements UserService {
 
         UserEntity savedUser = userRepository.save(userToSave);
 
-        log.info("UserServiceImpl -> create: user saved: {}", savedUser);
-        return userMapper.mapToFullDto(savedUser);
+        UserFullDto userFullDto = userMapper.mapToFullDto(savedUser);
+
+        log.info("UserServiceImpl -> create: user saved: {}", userFullDto);
+        return userFullDto;
     }
 
     @Override
@@ -93,7 +96,7 @@ public class UserServiceImpl implements UserService {
         Optional<UserEntity> findedUser = userRepository.findById(dto.getId());
 
         if (findedUser.isEmpty()){
-            throw new UserIsNotFoundException(getNotFoundText(dto.getId()));
+            throwEntityNotFoundException(UserEntity.class, dto.getId());
         }
 
         checkIfEmailExists(dto.getEmail(), dto.getId());
@@ -104,8 +107,10 @@ public class UserServiceImpl implements UserService {
 
         UserEntity updatedUser = userRepository.save(entityToUpdate);
 
-        log.info("UserServiceImpl -> update: user updated: {}", updatedUser);
-        return userMapper.mapToFullDto(updatedUser);
+        UserFullDto userFullDto = userMapper.mapToFullDto(updatedUser);
+
+        log.info("UserServiceImpl -> update: user updated: {}", userFullDto);
+        return userFullDto;
     }
 
     @Override
@@ -115,7 +120,7 @@ public class UserServiceImpl implements UserService {
 
         if (findedUser.isEmpty()){
             log.info("UserServiceImpl -> changePassword: User with id:{} not found", dto.getId());
-            throw new UserIsNotFoundException(UserExceptionConstants.getNotFoundText(dto.getId()));
+            throwEntityNotFoundException(UserEntity.class, dto.getId());
         }
 
         UserEntity userToUpdate = findedUser.get();
@@ -136,7 +141,7 @@ public class UserServiceImpl implements UserService {
     public void deleteById(Long id) {
         if (!userRepository.existsById(id)){
             log.info("UserServiceImpl -> deleteById: user is not found by id: {}", id);
-            throw new UserIsNotFoundException(getNotFoundText(id));
+            throwEntityNotFoundException(UserEntity.class, id);
         }
 
         userRepository.deleteById(id);
@@ -146,14 +151,14 @@ public class UserServiceImpl implements UserService {
     private void checkIfLoginExists(String login, Long id){
         UserEntity foundUserByLogin = userRepository.findByLogin(login);
         if (foundUserByLogin != null && !foundUserByLogin.getId().equals(id)){
-            throw new UserCredentialsAreTakenException(getLoginCredentialsText());
+            throwLoginCredentialsException(login);
         }
     }
 
     private void checkIfEmailExists(String email, Long id){
         UserEntity foundUserByEmail = userRepository.findByEmail(email);
         if (foundUserByEmail != null && !foundUserByEmail.getId().equals(id)){
-            throw new UserCredentialsAreTakenException(getEmailCredentialsText());
+            throwEmailCredentialsException(email);
         }
     }
 }

@@ -6,34 +6,41 @@ import com.starleken.springchannel.dto.user.UserFullDto;
 import com.starleken.springchannel.dto.user.UserUpdateDto;
 import com.starleken.springchannel.entity.UserEntity;
 import com.starleken.springchannel.exception.IncorrectPasswordException;
-import com.starleken.springchannel.exception.entityCredentials.UserCredentialsAreTakenException;
-import com.starleken.springchannel.exception.entityNotFound.UserIsNotFoundException;
+import com.starleken.springchannel.exception.entityCredentials.EntityCredentialsAreTakenException;
+import com.starleken.springchannel.exception.entityNotFound.EntityIsNotFoundException;
+import com.starleken.springchannel.mapper.UserMapper;
 import com.starleken.springchannel.repository.UserRepository;
+import com.starleken.springchannel.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static com.starleken.springchannel.core.utils.dtoUtils.UserDtoUtls.*;
+import static com.starleken.springchannel.core.utils.entityUtils.UserEntityUtils.generateUser;
+import static com.starleken.springchannel.core.utils.entityUtils.UserEntityUtils.generateUserWithId;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Optional;
 
-import static com.starleken.springchannel.core.utils.entityUtils.UserEntityUtils.generateUser;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
 
-    private UserService userService;
+    @Mock
     private UserRepository userRepository;
 
-    @Autowired
-    public UserServiceTest(UserService userService, UserRepository userRepository) {
-        this.userService = userService;
-        this.userRepository = userRepository;
-    }
+    @Spy
+    private UserMapper userMapper = Mappers.getMapper(UserMapper.class);
 
-    @BeforeEach
-    private void setUp(){
-        userRepository.deleteAll();
-    }
+    @InjectMocks
+    private UserServiceImpl userService;
 
     @Test
     void findAll_happyPath() {
@@ -41,8 +48,7 @@ public class UserServiceTest {
         UserEntity user1 = generateUser();
         UserEntity user2 = generateUser();
 
-        userRepository.save(user1);
-        userRepository.save(user2);
+        when(userRepository.findAll()).thenReturn(List.of(user1, user2));
 
         //when
         List<UserFullDto> findedUsers = userService.findAll();
@@ -55,274 +61,200 @@ public class UserServiceTest {
     @Test
     void findById_happyPath(){
         //given
-        UserEntity user = generateUser();
-        UserEntity savedUser = userRepository.save(user);
+        UserEntity user = generateUserWithId();
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         //when
-        UserFullDto findedUserDto = userService.findById(savedUser.getId());
+        UserFullDto findedUserDto = userService.findById(user.getId());
 
         //then
         Assertions.assertNotNull(findedUserDto);
-        Assertions.assertEquals(savedUser.getId(), findedUserDto.getId());
+        Assertions.assertEquals(user.getId(), findedUserDto.getId());
     }
 
     @Test
     void findById_whenNotFound() {
         //given
-        boolean isNotFound = false;
+        long idToSearch = 5L;
+        when(userRepository.findById(idToSearch)).thenReturn(Optional.empty());
 
         //when
-        try{
-            UserFullDto findedUser = userService.findById(1L);
-        } catch(UserIsNotFoundException ex) {
-            isNotFound = true;
-        }
-
-        //then
-        Assertions.assertTrue(isNotFound);
+        Assertions.assertThrows(EntityIsNotFoundException.class,
+                () -> userService.findById(idToSearch));
     }
 
     @Test
     void findByLogin_happyPath() {
         //given
         UserEntity user = generateUser();
-        UserEntity savedUser = userRepository.save(user);
+        when(userRepository.findByLogin(user.getLogin())).thenReturn(user);
 
         //when
-        UserFullDto findedDto = userService.findByLogin(savedUser.getLogin());
+        UserFullDto findedDto = userService.findByLogin(user.getLogin());
 
         //then
         Assertions.assertNotNull(findedDto);
-        Assertions.assertEquals(savedUser.getLogin(), findedDto.getLogin());
+        Assertions.assertEquals(user.getLogin(), findedDto.getLogin());
     }
 
     @Test
     void findByLogin_whenNotFound() {
         //given
-        boolean isNotFound = false;
+        String loginToSearch = "Starleken";
+        when(userRepository.findByLogin(loginToSearch)).thenReturn(null);
 
         //when
-        try{
-            UserFullDto findedUser = userService.findByLogin("Starleken");
-        } catch(UserIsNotFoundException ex) {
-            isNotFound = true;
-        }
+        Assertions.assertThrows(EntityIsNotFoundException.class,
+                () -> userService.findByLogin(loginToSearch));
 
         //then
-        Assertions.assertTrue(isNotFound);
     }
 
     @Test
     void create_happyPath() {
         //given
-        UserCreateDto dto = new UserCreateDto();
-        dto.setEmail("vzvzx");
-        dto.setLogin("czx");
-        dto.setPassword("bzzqa");
-        dto.setImageURL("qweqw1");
+        UserCreateDto createDto = generateUserCreateDto();
+        when(userRepository.save(Mockito.any(UserEntity.class))).thenAnswer(i -> i.getArguments()[0]);
 
         //when
-        UserFullDto userFullDto = userService.create(dto);
+        UserFullDto userFullDto = userService.create(createDto);
 
         //then
         Assertions.assertNotNull(userFullDto);
-        Assertions.assertNotNull(userFullDto.getId());
     }
 
     @Test
     void create_whenLoginExists() {
         //given
-        boolean isSaved = true;
+        UserCreateDto createDto = generateUserCreateDto();
+        UserEntity entityToReturn = generateUserWithId();
 
-        UserCreateDto dto1 = new UserCreateDto();
-        dto1.setEmail("dto1");
-        dto1.setLogin("starleken");
-        dto1.setPassword("dto1");
-        dto1.setImageURL("dto1");
-
-        UserCreateDto dto2 = new UserCreateDto();
-        dto2.setEmail("dto2");
-        dto2.setLogin("starleken");
-        dto2.setPassword("dto2");
-        dto2.setImageURL("dto2");
-
-        userService.create(dto1);
+        when(userRepository.findByLogin(createDto.getLogin())).thenReturn(entityToReturn);
 
         //when
-        try{
-            userService.create(dto2);
-        } catch (UserCredentialsAreTakenException ex){
-            isSaved = false;
-        }
+        Assertions.assertThrows(EntityCredentialsAreTakenException.class,
+                () -> userService.create(createDto));
 
-        Assertions.assertFalse(isSaved);
+        //then
     }
 
     @Test
     void create_whenEmailExists() {
         //given
-        boolean isSaved = true;
+        UserCreateDto createDto = generateUserCreateDto();
 
-        UserCreateDto dto1 = new UserCreateDto();
-        dto1.setEmail("starleken");
-        dto1.setLogin("dto1");
-        dto1.setPassword("dto1");
-        dto1.setImageURL("dto1");
+        UserEntity userToReturn = generateUserWithId();
+        userToReturn.setEmail(createDto.getEmail());
 
-        UserCreateDto dto2 = new UserCreateDto();
-        dto2.setEmail("starleken");
-        dto2.setLogin("dto2");
-        dto2.setPassword("dto2");
-        dto2.setImageURL("dto2");
-
-        userService.create(dto1);
+        when(userRepository.findByEmail(createDto.getEmail())).thenReturn(userToReturn);
 
         //when
-        try{
-            userService.create(dto2);
-        } catch (UserCredentialsAreTakenException ex){
-            isSaved = false;
-        }
+        Assertions.assertThrows(EntityCredentialsAreTakenException.class,
+                () -> userService.create(createDto));
 
-        Assertions.assertFalse(isSaved);
+        //then
     }
 
     @Test
     void update_happyPath() {
         //given
-        String newEmail = "starleken@mail.ru";
-        String newImage = "http://newImage.jpg";
+        UserEntity userToUpdate = generateUserWithId();
 
-        UserEntity user = generateUser();
-        UserEntity savedUser = userRepository.save(user);
+        when(userRepository.findById(userToUpdate.getId())).thenReturn(Optional.of(userToUpdate));
+        when(userRepository.save(Mockito.any(UserEntity.class))).thenAnswer(i -> i.getArguments()[0]);
 
-        UserUpdateDto dto = new UserUpdateDto();
-        dto.setId(savedUser.getId());
-        dto.setEmail(newEmail);
-        dto.setImageUrl(newImage);
+        UserUpdateDto updateDto = generateUserUpdateDto(userToUpdate.getId());
 
         //when
-        UserFullDto updatedUser = userService.update(dto);
+        UserFullDto updatedUser = userService.update(updateDto);
 
         //then
         Assertions.assertNotNull(updatedUser);
-        Assertions.assertEquals(newEmail, updatedUser.getEmail());
-        Assertions.assertEquals(newImage, updatedUser.getImageURL());
+        Assertions.assertEquals(updateDto.getEmail(), updatedUser.getEmail());
+        Assertions.assertEquals(updateDto.getImageUrl(), updatedUser.getImageURL());
     }
 
     @Test
     void update_whenEmailExists() {
         //given
-        String newEmail = "starleken@mail.ru";
-        String newImage = "http://newImage.jpg";
+        UserEntity userToUpdate = generateUserWithId();
+        UserEntity userToFindEmail = generateUserWithId();
 
-        UserEntity userToSave = generateUser();
-        userToSave.setEmail("starleken");
-        userRepository.save(userToSave);
+        UserUpdateDto updateDto = generateUserUpdateDto(userToUpdate.getId());
+        updateDto.setEmail(userToFindEmail.getEmail());
 
-        UserEntity user = generateUser();
-        UserEntity savedUser = userRepository.save(user);
-
-        UserUpdateDto dto = new UserUpdateDto();
-        dto.setId(savedUser.getId());
-        dto.setEmail("starleken");
-        dto.setImageUrl(newImage);
-
-        boolean isUpdated = true;
+        when(userRepository.findById(userToUpdate.getId())).thenReturn(Optional.of(userToUpdate));
+        when(userRepository.findByEmail(userToFindEmail.getEmail())).thenReturn(userToFindEmail);
 
         //when
-        try{
-            UserFullDto updatedUser = userService.update(dto);
-        } catch(UserCredentialsAreTakenException ex){
-            isUpdated = false;
-        }
+        Assertions.assertThrows(EntityCredentialsAreTakenException.class,
+                () -> userService.update(updateDto));
 
         //then
-        Assertions.assertFalse(isUpdated);
     }
 
     @Test
     void changePassword_happyPath() {
         //given
-        String oldPassword = "old";
-        String newPassword = "new";
+        UserEntity userToChange = generateUserWithId();
 
-        UserEntity user = generateUser();
-        user.setPassword(oldPassword);
-        UserEntity savedUser = userRepository.save(user);
+        ChangePasswordDto changePasswordDto = generateChangePasswordDto(
+                userToChange.getId(), userToChange.getPassword());
 
-        ChangePasswordDto dto = new ChangePasswordDto();
-        dto.setId(savedUser.getId());
-        dto.setOldPassword(oldPassword);
-        dto.setNewPassword(newPassword);
+        when(userRepository.findById(userToChange.getId())).thenReturn(Optional.of(userToChange));
+        when(userRepository.save(Mockito.any(UserEntity.class))).thenAnswer(i -> i.getArguments()[0]);
 
         //when
-        userService.changePassword(dto);
-        Optional<UserEntity> findedUser = userRepository.findById(dto.getId());
-        
+        userService.changePassword(changePasswordDto);
+        Optional<UserEntity> findedUser = userRepository.findById(changePasswordDto.getId());
+
         //then
-        Assertions.assertEquals(newPassword, findedUser.get().getPassword());
+        Assertions.assertEquals(changePasswordDto.getNewPassword(), findedUser.get().getPassword());
     }
 
     @Test
     void changePassword_whenNotFound() {
         //given
-        ChangePasswordDto dto = new ChangePasswordDto();
-        dto.setId(5L);
-        dto.setOldPassword("123");
-        dto.setNewPassword("152");
+        ChangePasswordDto dto = generateChangePasswordDto(1l, "old password");
 
-        boolean isNotFound = false;
+        when(userRepository.findById(dto.getId())).thenReturn(Optional.empty());
 
         //when
-        try{
-            userService.changePassword(dto);
-        } catch(UserIsNotFoundException ex){
-            isNotFound = true;
-        }
+        Assertions.assertThrows(EntityIsNotFoundException.class,
+                () -> userService.changePassword(dto));
 
         //then
-        Assertions.assertTrue(isNotFound);
     }
 
     @Test
     void changePassword_whenPasswordIsIncorrect() {
         //given
-        String oldPassword = "old";
-        String newPassword = "new";
+        UserEntity userToReturn = generateUserWithId();
+        ChangePasswordDto changePasswordDto = generateChangePasswordDto(
+                userToReturn.getId(), "incorrect");
 
-        UserEntity user = generateUser();
-        user.setPassword(oldPassword);
-        UserEntity savedUser = userRepository.save(user);
-
-        ChangePasswordDto dto = new ChangePasswordDto();
-        dto.setId(savedUser.getId());
-        dto.setOldPassword(oldPassword + " incorrect");
-        dto.setNewPassword(newPassword);
-
-        boolean isIncorrect = false;
+        when(userRepository.findById(userToReturn.getId())).thenReturn(Optional.of(userToReturn));
 
         //when
-        try{
-            userService.changePassword(dto);
-        } catch(IncorrectPasswordException ex){
-            isIncorrect = true;
-        }
+        Assertions.assertThrows(IncorrectPasswordException.class,
+                () -> userService.changePassword(changePasswordDto));
 
         //then
-        Assertions.assertTrue(isIncorrect);
     }
 
     @Test
     void deleteById_happyPath() {
         //given
-        UserEntity user = generateUser();
-        UserEntity savedUser = userRepository.save(user);
+        UserEntity userToReturn = generateUserWithId();
+
+        when(userRepository.existsById(userToReturn.getId())).thenReturn(true);
+        when(userRepository.findById(userToReturn.getId())).thenReturn(Optional.empty());
 
         //when
-        userService.deleteById(savedUser.getId());
+        userService.deleteById(userToReturn.getId());
 
-        Optional<UserEntity> findedUser = userRepository.findById(savedUser.getId());
+        Optional<UserEntity> findedUser = userRepository.findById(userToReturn.getId());
 
         //then
         Assertions.assertTrue(findedUser.isEmpty());
@@ -331,16 +263,15 @@ public class UserServiceTest {
     @Test
     void deleteById_whenNotFound() {
         //given
-        boolean isNotFound = false;
+        long idToDelete = 1L;
+
+        when(userRepository.existsById(idToDelete)).thenReturn(false);
 
         //when
-        try{
-            userService.deleteById(1L);
-        } catch(UserIsNotFoundException ex){
-            isNotFound = true;
-        }
+        Assertions.assertThrows(EntityIsNotFoundException.class,
+                () -> userService.deleteById(idToDelete));
 
         //then
-        Assertions.assertTrue(isNotFound);
+
     }
 }

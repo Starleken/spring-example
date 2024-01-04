@@ -9,17 +9,17 @@ import java.util.List;
 
 public interface UserService {
 
-    public List<UserFullDto> findAll();
+    List<UserFullDto> findAll();
 
-    public UserFullDto findById(Long id);
+    UserFullDto findById(Long id);
 
-    public UserFullDto findByLogin(String login);
+    UserFullDto findByLogin(String login);
 
-    public UserFullDto create(UserCreateDto dto);
+    UserFullDto create(UserCreateDto dto);
 
-    public UserFullDto update(UserUpdateDto dto);
+     UserFullDto update(UserUpdateDto dto);
 
-    public UserFullDto changePassword(ChangePasswordDto dto);
+     UserFullDto changePassword(ChangePasswordDto dto);
 
-    public void deleteById(Long id);
+     void deleteById(Long id);
 }

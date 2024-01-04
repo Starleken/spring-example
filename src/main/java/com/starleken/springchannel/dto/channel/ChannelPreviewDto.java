@@ -9,15 +9,12 @@ import lombok.Data;
 @Data
 public class ChannelPreviewDto {
 
-    @Schema(example = "1", description = "Channel id to update")
-    @NotNull(message = "id must be")
+    @Schema(example = "1", description = "Channel id")
     private Long id;
 
     @Schema(example = "Starleken", description = "Channel name")
-    @NotBlank(message = "Name must be")
     private String name;
 
     @Schema(example = "PROGRAMMING", description = "Channel type")
-    @NotNull(message = "Type must be")
     private ChannelEntityType type;
 }

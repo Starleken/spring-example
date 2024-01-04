@@ -1,13 +1,10 @@
 package com.starleken.springchannel.service.impl;
 
-import com.starleken.springchannel.constants.exceptionConstants.ChannelExceptionConstants;
 import com.starleken.springchannel.dto.post.PostCreateDto;
 import com.starleken.springchannel.dto.post.PostFullDto;
 import com.starleken.springchannel.dto.post.PostUpdateDto;
 import com.starleken.springchannel.entity.ChannelEntity;
 import com.starleken.springchannel.entity.PostEntity;
-import com.starleken.springchannel.exception.entityNotFound.ChannelIsNotFoundException;
-import com.starleken.springchannel.exception.entityNotFound.PostIsNotFoundException;
 import com.starleken.springchannel.mapper.PostMapper;
 import com.starleken.springchannel.repository.ChannelRepository;
 import com.starleken.springchannel.repository.PostRepository;
@@ -17,12 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.starleken.springchannel.constants.exceptionConstants.PostExceptionConstants.*;
+import static com.starleken.springchannel.utils.ExceptionUtils.throwEntityNotFoundException;
 
 @Slf4j
 @Service
@@ -54,12 +50,13 @@ public class PostServiceImpl implements PostService {
 
         if (findedPost.isEmpty()){
             log.info("PostServiceImpl -> findById: post is not found by id: {}", id);
-            throw new PostIsNotFoundException(getNotFoundTextById(id));
+            throwEntityNotFoundException(PostEntity.class, id);
         }
 
-        log.info("PostServiceImpl -> findById: " + findedPost.get());
+        PostFullDto postFullDto = mapper.mapToDto(findedPost.get());
 
-        return mapper.mapToDto(findedPost.get());
+        log.info("PostServiceImpl -> findById: " + postFullDto);
+        return postFullDto;
     }
 
     @Override
@@ -70,16 +67,16 @@ public class PostServiceImpl implements PostService {
                 .findById(dto.getChannelId());
 
         if (findedChannel.isEmpty()){
-            throw new ChannelIsNotFoundException(ChannelExceptionConstants
-                    .getNotFoundText(dto.getChannelId()));
+            throwEntityNotFoundException(ChannelEntity.class, dto.getChannelId());
         }
 
         postToSave.setChannel(findedChannel.get());
         PostEntity savedPost = postRepository.save(postToSave);
 
-        log.info("PostServiceImpl -> create: " + savedPost);
+        PostFullDto postFullDto = mapper.mapToDto(savedPost);
 
-        return mapper.mapToDto(savedPost);
+        log.info("PostServiceImpl -> create: " + postFullDto);
+        return postFullDto;
     }
 
     @Override
@@ -89,7 +86,7 @@ public class PostServiceImpl implements PostService {
 
         if (findedPost.isEmpty()){
             log.info("PostServiceImpl -> update: post is not found by id: {}", dto.getId());
-            throw new PostIsNotFoundException(getNotFoundTextById(dto.getId()));
+            throwEntityNotFoundException(PostEntity.class, dto.getId());
         }
         PostEntity postToUpdate = findedPost.get();
         postToUpdate.setTitle(dto.getTitle());
@@ -97,9 +94,10 @@ public class PostServiceImpl implements PostService {
 
         PostEntity updatedPost = postRepository.save(postToUpdate);
 
-        log.info("PostServiceImpl -> update: " + updatedPost);
+        PostFullDto postFullDto = mapper.mapToDto(updatedPost);
 
-        return mapper.mapToDto(updatedPost);
+        log.info("PostServiceImpl -> update: " + postFullDto);
+        return postFullDto;
     }
 
     @Override
@@ -109,11 +107,10 @@ public class PostServiceImpl implements PostService {
 
         if (findedPost.isEmpty()){
             log.info("PostServiceImpl -> deleteById: post is not found by id: {}", id);
-            throw new PostIsNotFoundException(getNotFoundTextById(id));
+            throwEntityNotFoundException(PostEntity.class, id);
         }
 
-        log.info("PostServiceImpl -> deleteById: post deleted by id " + id);
-
         postRepository.deleteById(id);
+        log.info("PostServiceImpl -> deleteById: post deleted by id " + id);
     }
 }

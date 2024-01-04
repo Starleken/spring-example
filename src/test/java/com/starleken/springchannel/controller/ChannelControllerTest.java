@@ -2,13 +2,12 @@ package com.starleken.springchannel.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.starleken.springchannel.core.db.ChannelDbHelper;
 import com.starleken.springchannel.dto.channel.ChannelCreateDto;
 import com.starleken.springchannel.dto.channel.ChannelFullDto;
 import com.starleken.springchannel.dto.channel.ChannelPreviewDto;
 import com.starleken.springchannel.dto.channel.ChannelUpdateDto;
 import com.starleken.springchannel.entity.ChannelEntity;
-import com.starleken.springchannel.entity.ChannelEntityType;
-import com.starleken.springchannel.repository.ChannelRepository;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -22,38 +21,37 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import java.util.List;
 import java.util.Optional;
 
-import static com.starleken.springchannel.EntityGenerationUtils.*;
+import static com.starleken.springchannel.core.utils.dtoUtils.ChannelDtoUtils.generateChannelCreateDto;
+import static com.starleken.springchannel.core.utils.dtoUtils.ChannelDtoUtils.generateChannelUpdateDto;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class ChannelControllerTest {
 
-    private ChannelRepository channelRepository;
+    private ChannelDbHelper helper;
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
     @Autowired
-    public ChannelControllerTest(ObjectMapper objectMapper, ChannelRepository channelRepository, MockMvc mockMvc) {
-        this.channelRepository = channelRepository;
+    public ChannelControllerTest(ChannelDbHelper helper, MockMvc mockMvc, ObjectMapper objectMapper) {
+        this.helper = helper;
         this.mockMvc = mockMvc;
         this.objectMapper = objectMapper;
     }
 
     @BeforeEach
     void setUp() {
-        channelRepository.deleteAll();
+        helper.clearDB();
     }
 
     @Test
     void findAll_happyPath() throws Exception{
         //given
-        ChannelEntity channel1 = generateChannel();
-        ChannelEntity channel2 = generateChannel();
-        channelRepository.save(channel1);
-        channelRepository.save(channel2);
+        helper.saveChannel();
+        helper.saveChannel();
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/channel"))
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/channels"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
@@ -69,11 +67,10 @@ public class ChannelControllerTest {
     @Test
     void findById_happyPath() throws Exception{
         //given
-        ChannelEntity channelToSave = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channelToSave);
+        ChannelEntity savedChannel = helper.saveChannel();
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/channel/{id}",
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/channels/{id}",
                         savedChannel.getId()))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
@@ -92,7 +89,7 @@ public class ChannelControllerTest {
         long idForSearch = 5L;
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/channel/{id}",
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/channels/{id}",
                         idForSearch))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
@@ -103,12 +100,10 @@ public class ChannelControllerTest {
     @Test
     void create_happyPath() throws Exception{
         //given
-        ChannelCreateDto createDto = new ChannelCreateDto();
-        createDto.setName("Name");
-        createDto.setType(ChannelEntityType.EDUCATION);
+        ChannelCreateDto createDto = generateChannelCreateDto();
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/channel")
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/channels")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(MockMvcResultMatchers.status().isCreated())
@@ -126,16 +121,13 @@ public class ChannelControllerTest {
     @Test
     void create_whenNameIsTaken() throws Exception{
         //given
-        ChannelEntity channelToSave = generateChannel();
-        channelToSave.setName("starleken");
-        channelRepository.save(channelToSave);
+        ChannelEntity savedChannel = helper.saveChannel();
 
-        ChannelCreateDto createDto = new ChannelCreateDto();
-        createDto.setName("starleken");
-        createDto.setType(ChannelEntityType.EDUCATION);
+        ChannelCreateDto createDto = generateChannelCreateDto();
+        createDto.setName(savedChannel.getName());
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/channel")
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/channels")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
@@ -147,16 +139,11 @@ public class ChannelControllerTest {
     @Test
     void update_happyPath() throws Exception{
         //given
-        ChannelEntity channelToSave = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channelToSave);
-
-        ChannelUpdateDto updateDto = new ChannelUpdateDto();
-        updateDto.setId(savedChannel.getId());
-        updateDto.setType(savedChannel.getType());
-        updateDto.setName("new name");
+        ChannelEntity savedChannel = helper.saveChannel();
+        ChannelUpdateDto updateDto = generateChannelUpdateDto(savedChannel.getId());
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/channel")
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/channels")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
@@ -174,13 +161,10 @@ public class ChannelControllerTest {
     @Test
     void update_whenNotFound() throws Exception{
         //given
-        ChannelUpdateDto updateDto = new ChannelUpdateDto();
-        updateDto.setId(5L);
-        updateDto.setType(ChannelEntityType.PROGRAMMING);
-        updateDto.setName("new name");
+        ChannelUpdateDto updateDto = generateChannelUpdateDto(1L);
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/channel")
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/channels")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
@@ -192,22 +176,14 @@ public class ChannelControllerTest {
     @Test
     void update_whenNameIsExists() throws Exception{
         //given
-        String nameToCheck = "starleken";
+        ChannelEntity savedChannel = helper.saveChannel();
+        ChannelEntity channelToUpdate = helper.saveChannel();
 
-        ChannelEntity channelToSave = generateChannel();
-        channelToSave.setName(nameToCheck);
-        channelRepository.save(channelToSave);
-
-        ChannelEntity channelToUpdate = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channelToUpdate);
-
-        ChannelUpdateDto updateDto = new ChannelUpdateDto();
-        updateDto.setId(savedChannel.getId());
-        updateDto.setType(savedChannel.getType());
-        updateDto.setName(nameToCheck);
+        ChannelUpdateDto updateDto = generateChannelUpdateDto(channelToUpdate.getId());
+        updateDto.setName(savedChannel.getName());
 
         //when
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/channel")
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/channels")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
@@ -219,17 +195,16 @@ public class ChannelControllerTest {
     @Test
     void deleteById_happyPath() throws Exception{
         //given
-        ChannelEntity channel = generateChannel();
-        ChannelEntity savedChannel = channelRepository.save(channel);
+        ChannelEntity savedChannel = helper.saveChannel();
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.delete("/channel/{id}",
+        mockMvc.perform(MockMvcRequestBuilders.delete("/channels/{id}",
                         savedChannel.getId()))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        Optional<ChannelEntity> findedChannel = channelRepository
-                .findById(savedChannel.getId());
+        Optional<ChannelEntity> findedChannel = helper.
+                findChannelById(savedChannel.getId());
 
         //then
         Assertions.assertTrue(findedChannel.isEmpty());
@@ -241,7 +216,7 @@ public class ChannelControllerTest {
         long idForDelete = 5L;
 
         //when
-        mockMvc.perform(MockMvcRequestBuilders.delete("/channel/{id}",
+        mockMvc.perform(MockMvcRequestBuilders.delete("/channels/{id}",
                         idForDelete))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
