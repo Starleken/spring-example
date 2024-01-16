@@ -27,6 +27,7 @@ public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
     private final ChannelRepository channelRepository;
+
     private final PostMapper mapper;
 
     @Override

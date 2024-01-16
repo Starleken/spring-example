@@ -11,6 +11,9 @@ import com.starleken.springchannel.repository.UserRepository;
 import com.starleken.springchannel.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +45,7 @@ public class UserServiceImpl implements UserService {
         return dtos;
     }
 
+    @Cacheable("users")
     @Override
     @Transactional(readOnly = true)
     public UserFullDto findById(Long id) {
@@ -58,6 +62,7 @@ public class UserServiceImpl implements UserService {
         return userFullDto;
     }
 
+    @Cacheable("users")
     @Override
     @Transactional(readOnly = true)
     public UserFullDto findByLogin(String login) {
@@ -90,6 +95,7 @@ public class UserServiceImpl implements UserService {
         return userFullDto;
     }
 
+    @CachePut(value = "users", key = "#dto.id")
     @Override
     @Transactional
     public UserFullDto update(UserUpdateDto dto) {
@@ -113,6 +119,7 @@ public class UserServiceImpl implements UserService {
         return userFullDto;
     }
 
+    @CachePut(value = "users", key = "#dto.id")
     @Override
     @Transactional
     public UserFullDto changePassword(ChangePasswordDto dto) {
@@ -137,6 +144,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @CacheEvict("users")
     @Transactional
     public void deleteById(Long id) {
         if (!userRepository.existsById(id)){
