@@ -1,5 +1,6 @@
 package com.starleken.springchannel.service;
 
+import com.starleken.springchannel.core.equals.PostEqualsUtils;
 import com.starleken.springchannel.dto.post.PostCreateDto;
 import com.starleken.springchannel.dto.post.PostFullDto;
 import com.starleken.springchannel.dto.post.PostUpdateDto;
@@ -72,7 +73,7 @@ public class PostServiceTest {
 
         //then
         Assertions.assertNotNull(findedPost);
-        Assertions.assertEquals(savedPost.getTitle(), findedPost.getTitle());
+        PostEqualsUtils.EqualEntityAndFullDto(savedPost, findedPost);
     }
 
     @Test
@@ -103,8 +104,7 @@ public class PostServiceTest {
 
         //then
         Assertions.assertNotNull(postFullDto);
-        Assertions.assertEquals(createDto.getTitle(), postFullDto.getTitle());
-        Assertions.assertEquals(createDto.getChannelId(), postFullDto.getChannelId());
+        PostEqualsUtils.EqualFullDtoAndCreateDto(postFullDto, createDto);
     }
 
     @Test
@@ -135,8 +135,7 @@ public class PostServiceTest {
 
         //then
         Assertions.assertNotNull(fullDto);
-        Assertions.assertEquals(updateDto.getId(), fullDto.getId());
-        Assertions.assertEquals(updateDto.getTitle(), fullDto.getTitle());
+        PostEqualsUtils.EqualFullDtoAndUpdateDto(fullDto, updateDto);
     }
 
     @Test

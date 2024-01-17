@@ -1,21 +1,17 @@
 package com.starleken.springchannel.service;
 
-import com.starleken.springchannel.core.utils.dtoUtils.ChannelDtoUtils;
+import com.starleken.springchannel.core.equals.ChannelEqualsUtils;
 import com.starleken.springchannel.dto.channel.ChannelCreateDto;
 import com.starleken.springchannel.dto.channel.ChannelFullDto;
 import com.starleken.springchannel.dto.channel.ChannelPreviewDto;
 import com.starleken.springchannel.dto.channel.ChannelUpdateDto;
 import com.starleken.springchannel.entity.ChannelEntity;
-import com.starleken.springchannel.entity.ChannelEntityType;
-import com.starleken.springchannel.exception.entityCredentials.EntityCredentialsAreTakenException;
 import com.starleken.springchannel.exception.entityField.EntityFieldIsTakenException;
 import com.starleken.springchannel.exception.entityNotFound.EntityIsNotFoundException;
 import com.starleken.springchannel.mapper.ChannelMapper;
-import com.starleken.springchannel.mapper.UserMapper;
 import com.starleken.springchannel.repository.ChannelRepository;
 import com.starleken.springchannel.service.impl.ChannelServiceImpl;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
@@ -24,15 +20,13 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 import java.util.Optional;
 
+import static com.starleken.springchannel.core.equals.ChannelEqualsUtils.*;
 import static com.starleken.springchannel.core.utils.dtoUtils.ChannelDtoUtils.generateChannelCreateDto;
 import static com.starleken.springchannel.core.utils.dtoUtils.ChannelDtoUtils.generateChannelUpdateDto;
-import static com.starleken.springchannel.core.utils.entityUtils.ChannelEntityUtils.generateChannel;
 import static com.starleken.springchannel.core.utils.entityUtils.ChannelEntityUtils.generateChannelWithId;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,8 +71,7 @@ public class ChannelServiceTest {
 
         //then
         Assertions.assertNotNull(findedChannel);
-        Assertions.assertEquals(channelToFind.getId(), findedChannel.getId());
-        Assertions.assertEquals(channelToFind.getName(), findedChannel.getName());
+        EqualEntityAndFullDto(channelToFind, findedChannel);
     }
 
     @Test
@@ -106,8 +99,7 @@ public class ChannelServiceTest {
 
         //then
         Assertions.assertNotNull(createdChannel);
-        Assertions.assertEquals(createDto.getName(), createdChannel.getName());
-        Assertions.assertEquals(createDto.getType(), createdChannel.getType());
+        ChannelEqualsUtils.EqualFullDtoAndCreateDto(createdChannel, createDto);
     }
 
     @Test
@@ -140,8 +132,7 @@ public class ChannelServiceTest {
 
         //then
         Assertions.assertNotNull(updatedChannel);
-        Assertions.assertEquals(updateDto.getName(), updatedChannel.getName());
-        Assertions.assertEquals(updateDto.getType(), updatedChannel.getType());
+        ChannelEqualsUtils.EqualFullDtoAndUpdateDto(updatedChannel, updateDto);
     }
 
     @Test

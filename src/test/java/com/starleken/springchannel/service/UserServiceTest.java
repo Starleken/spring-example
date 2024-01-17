@@ -1,5 +1,6 @@
 package com.starleken.springchannel.service;
 
+import com.starleken.springchannel.core.equals.UserEqualsUtils;
 import com.starleken.springchannel.dto.user.ChangePasswordDto;
 import com.starleken.springchannel.dto.user.UserCreateDto;
 import com.starleken.springchannel.dto.user.UserFullDto;
@@ -9,6 +10,7 @@ import com.starleken.springchannel.exception.IncorrectPasswordException;
 import com.starleken.springchannel.exception.entityCredentials.EntityCredentialsAreTakenException;
 import com.starleken.springchannel.exception.entityNotFound.EntityIsNotFoundException;
 import com.starleken.springchannel.mapper.UserMapper;
+import com.starleken.springchannel.mapper.UserMapperTest;
 import com.starleken.springchannel.repository.UserRepository;
 import com.starleken.springchannel.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.*;
@@ -70,7 +72,7 @@ public class UserServiceTest {
 
         //then
         Assertions.assertNotNull(findedUserDto);
-        Assertions.assertEquals(user.getId(), findedUserDto.getId());
+        UserEqualsUtils.EqualEntityAndFullDto(user, findedUserDto);
     }
 
     @Test
@@ -95,7 +97,7 @@ public class UserServiceTest {
 
         //then
         Assertions.assertNotNull(findedDto);
-        Assertions.assertEquals(user.getLogin(), findedDto.getLogin());
+        UserEqualsUtils.EqualEntityAndFullDto(user, findedDto);
     }
 
     @Test
@@ -122,6 +124,7 @@ public class UserServiceTest {
 
         //then
         Assertions.assertNotNull(userFullDto);
+        UserEqualsUtils.EqualFullDtoAndCreateDto(userFullDto, createDto);
     }
 
     @Test
@@ -171,8 +174,7 @@ public class UserServiceTest {
 
         //then
         Assertions.assertNotNull(updatedUser);
-        Assertions.assertEquals(updateDto.getEmail(), updatedUser.getEmail());
-        Assertions.assertEquals(updateDto.getImageUrl(), updatedUser.getImageURL());
+        UserEqualsUtils.EqualFullDtoAndUpdateDto(updatedUser, updateDto);
     }
 
     @Test
