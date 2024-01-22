@@ -15,6 +15,9 @@ public class ChannelPreviewDto {
     @Schema(example = "Starleken", description = "Channel name")
     private String name;
 
+    @Schema(example = "http://image.com", description = "URL to image")
+    private String imageUrl;
+
     @Schema(example = "PROGRAMMING", description = "Channel type")
     private ChannelEntityType type;
 }

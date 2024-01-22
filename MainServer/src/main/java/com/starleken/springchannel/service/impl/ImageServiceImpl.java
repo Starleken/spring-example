@@ -1,6 +1,7 @@
 package com.starleken.springchannel.service.impl;
 
 import com.starleken.springchannel.service.ImageService;
+import com.starleken.springchannel.utils.ExceptionUtils;
 import com.starleken.springchannel.utils.ImageNameGetterUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+
+import static com.starleken.springchannel.utils.ExceptionUtils.*;
 
 @Service
 @RequiredArgsConstructor
@@ -30,8 +33,15 @@ public class ImageServiceImpl implements ImageService {
                     new ParameterizedTypeReference<>() {
                     });
 
-            return response.getBody();
+            if (response.getStatusCode().is5xxServerError()){
+                throwServerIsUnavailableException("Image");
+            }
+
+            String url = response.getBody();
+            log.info("Saved image by url: " + url);
+            return url;
         } catch (Exception ex){
+            log.info(ex.getMessage());
             return null;
         }
     }

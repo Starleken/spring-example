@@ -51,7 +51,7 @@ public class ChannelController {
             @ApiResponse(responseCode = "400", description = "Name is taken")
     })
     @PostMapping()
-    public ResponseEntity<ChannelFullDto> create(@Valid @RequestBody ChannelCreateDto dto){
+    public ResponseEntity<ChannelFullDto> create(@Valid @ModelAttribute ChannelCreateDto dto){
         return new ResponseEntity<>(channelService.create(dto), HttpStatus.CREATED);
     }
 
@@ -62,7 +62,7 @@ public class ChannelController {
             @ApiResponse(responseCode = "400", description = "Name is taken")
     })
     @PutMapping()
-    public ResponseEntity<ChannelFullDto> update(@Valid @RequestBody ChannelUpdateDto dto){
+    public ResponseEntity<ChannelFullDto> update(@Valid @ModelAttribute ChannelUpdateDto dto){
         return new ResponseEntity<>(channelService.update(dto), HttpStatus.OK);
     }
 

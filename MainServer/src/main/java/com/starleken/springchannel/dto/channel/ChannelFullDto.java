@@ -21,6 +21,9 @@ public class ChannelFullDto {
     @Schema(example = "PROGRAMMING", description = "Channel type")
     private ChannelEntityType type;
 
+    @Schema(example = "http://image.com", description = "URL to image")
+    private String imageUrl;
+
     @Schema(description = "Сhannel posts")
     private List<PostFullDto> posts;
 }

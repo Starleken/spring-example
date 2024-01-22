@@ -10,9 +10,9 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", uses = PostMapper.class)
 public interface ChannelMapper {
 
-
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "posts", ignore = true)
+    @Mapping(target = "imageUrl", ignore = true)
     ChannelEntity mapToEntity(ChannelCreateDto dto);
 
     ChannelFullDto mapToFullDto(ChannelEntity channelEntity);

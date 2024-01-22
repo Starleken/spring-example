@@ -3,6 +3,7 @@ package com.starleken.springchannel.utils;
 import com.starleken.springchannel.exception.entityField.EntityFieldIsTakenException;
 import com.starleken.springchannel.exception.entityCredentials.EntityCredentialsAreTakenException;
 import com.starleken.springchannel.exception.entityNotFound.EntityIsNotFoundException;
+import com.starleken.springchannel.exception.server.ServerIsUnavailableException;
 import jakarta.persistence.EntityNotFoundException;
 
 public abstract class ExceptionUtils {
@@ -30,5 +31,9 @@ public abstract class ExceptionUtils {
     public static void throwEmailCredentialsException(String email){
         String text = "Email: " + email + " is taken";
         throw new EntityCredentialsAreTakenException(text);
+    }
+
+    public static void throwServerIsUnavailableException(String server){
+        throw new ServerIsUnavailableException(server + "server is unavailable");
     }
 }

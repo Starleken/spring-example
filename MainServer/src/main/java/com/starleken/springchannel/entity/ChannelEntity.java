@@ -20,6 +20,9 @@ public class ChannelEntity {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
+    @Column(name = "image_url", nullable = true, unique = false)
+    private String imageUrl;
+
     @Enumerated(value = EnumType.STRING)
     @Column(name = "type")
     private ChannelEntityType type;

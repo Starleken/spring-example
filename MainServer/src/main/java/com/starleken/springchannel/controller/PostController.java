@@ -48,7 +48,7 @@ public class PostController {
             @ApiResponse(responseCode = "404", description = "Channel is not found")
     })
     @PostMapping()
-    public ResponseEntity<PostFullDto> create(@Valid  @RequestBody PostCreateDto dto){
+    public ResponseEntity<PostFullDto> create(@Valid @RequestBody PostCreateDto dto){
         return new ResponseEntity<>(postService.create(dto), HttpStatus.CREATED);
     }
 

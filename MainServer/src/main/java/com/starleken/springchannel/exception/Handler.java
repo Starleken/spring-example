@@ -3,6 +3,7 @@ package com.starleken.springchannel.exception;
 import com.starleken.springchannel.exception.entityCredentials.EntityCredentialsAreTakenException;
 import com.starleken.springchannel.exception.entityField.EntityFieldIsTakenException;
 import com.starleken.springchannel.exception.entityNotFound.EntityIsNotFoundException;
+import com.starleken.springchannel.exception.server.ServerIsUnavailableException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -43,5 +44,11 @@ public class Handler {
     public ResponseEntity<Object> handler(ConstraintViolationException ex, WebRequest request){
         log.info(ex.getMessage());
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ServerIsUnavailableException.class)
+    public ResponseEntity<Object> handler(ServerIsUnavailableException ex, WebRequest request){
+        log.info(ex.getMessage());
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
