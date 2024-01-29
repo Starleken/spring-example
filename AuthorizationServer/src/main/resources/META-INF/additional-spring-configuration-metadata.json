@@ -1,0 +1,13 @@
+{
+  "properties": [
+    {
+      "name": "jwt.secret.access",
+      "type": "java.lang.String",
+      "description": "Secret Key for JWT access token"
+    },
+    {
+      "name": "jwt.secret.refresh",
+      "type": "java.lang.String",
+      "description": "Secret Key for JWT refresh token"
+    }
+  ] }

@@ -3,7 +3,7 @@ package com.starleken.authorizationserver.controller;
 import com.starleken.authorizationserver.dto.authentication.LoginDto;
 import com.starleken.authorizationserver.dto.authentication.RegisterDto;
 import com.starleken.authorizationserver.dto.jwt.JwtResponse;
-import com.starleken.authorizationserver.entity.User;
+import com.starleken.authorizationserver.entity.UserEntity;
 import com.starleken.authorizationserver.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/authentication")
 public class AuthenticationController {
 
-    private AuthenticationService authenticationService;
+    private final AuthenticationService authenticationService;
 
     @GetMapping("/auth")
     public ResponseEntity<JwtResponse> authenticate(LoginDto loginDto){
@@ -27,7 +27,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<User> signup(RegisterDto registerDto){
+    public ResponseEntity<UserEntity> signup(RegisterDto registerDto){
         return new ResponseEntity<>(authenticationService
                 .signup(registerDto), HttpStatus.CREATED);
     }
