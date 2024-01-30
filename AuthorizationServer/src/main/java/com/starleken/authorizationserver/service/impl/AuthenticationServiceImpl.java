@@ -35,12 +35,29 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Optional<UserEntity> finded = userRepository.findByLoginAndPassword(
                 loginDto.getLogin(), loginDto.getPassword());
         if (finded.isEmpty()){
+            log.info("AuthenticationService -> user is not found by login: " + loginDto.getLogin());
             throwAuthException();
         }
 
+        log.info("Authenticated user by login: " + loginDto.getLogin());
         String accessToken = jwtService.generateAccessToken(finded.get());
         String refreshToken = jwtService.generateRefreshToken(finded.get());
         return new JwtResponse(accessToken, refreshToken);
+    }
+
+    @Override
+    public JwtResponse getNewAccessToken(String refreshToken) {
+        if (!jwtService.validateRefreshToken(refreshToken)){
+            log.info("AuthenticationService -> refresh token is invalid: " + refreshToken);
+            throwRefreshTokenIsIncorrectException();
+        }
+
+        UserEntity findedUser = jwtService.getRefreshTokenSubject(refreshToken);
+
+        String accessToken = jwtService.generateAccessToken(findedUser);
+
+        log.info("Authentication service -> user by login:{} received new access token", findedUser.getLogin());
+        return new JwtResponse(accessToken, null);
     }
 
     @Override
@@ -50,6 +67,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         UserEntity userEntity = userMapper.mapToEntity(registerDto);
         userRepository.save(userEntity);
 
+        log.info("Authentication service -> new user signup by login: " + registerDto.getLogin());
         //TODO FullDto
         return userEntity;
     }
@@ -57,25 +75,23 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public JwtResponse refresh(String refreshToken) {
         if (jwtService.validateRefreshToken(refreshToken)){
+            log.info("AuthenticationService -> refresh token is invalid: " + refreshToken);
             throwRefreshTokenIsIncorrectException();
         }
 
-        Claims claims = jwtService.getRefreshClaims(refreshToken);
-        String login = claims.getSubject();
+        UserEntity findedUser = jwtService.getRefreshTokenSubject(refreshToken);
 
-        Optional<UserEntity> findedUser = userRepository.findByLogin(login);
-        if (findedUser.isEmpty()){
-            throwAuthException(); //TODO new exception
-        }
+        String accessToken = jwtService.generateAccessToken(findedUser);
+        String newRefreshToken = jwtService.generateRefreshToken(findedUser);
 
-        String accessToken = jwtService.generateAccessToken(findedUser.get());
-        String newRefreshToken = jwtService.generateRefreshToken(findedUser.get());
+        log.info("AuthenticationService -> user by login:{} has updated tokens ", findedUser.getLogin());
         return new JwtResponse(accessToken, newRefreshToken);
     }
 
     private void checkIfLoginIsTaken(String login){
         Optional<UserEntity> finded = userRepository.findByLogin(login);
         if (finded.isPresent()){
+            log.info("AuthenticationService -> login is taken: " + login);
             throwEntityCredentialsException(UserEntity.class, "login", login);
         }
     }

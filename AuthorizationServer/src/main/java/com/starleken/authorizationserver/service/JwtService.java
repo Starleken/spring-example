@@ -2,6 +2,7 @@ package com.starleken.authorizationserver.service;
 
 import com.starleken.authorizationserver.entity.UserEntity;
 import io.jsonwebtoken.Claims;
+import org.apache.catalina.User;
 
 public interface JwtService {
 
@@ -12,4 +13,6 @@ public interface JwtService {
     boolean validateRefreshToken(String token);
 
     Claims getRefreshClaims(String token);
+
+    UserEntity getRefreshTokenSubject(String token);
 }

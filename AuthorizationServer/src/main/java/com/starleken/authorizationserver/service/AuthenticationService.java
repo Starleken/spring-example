@@ -9,6 +9,8 @@ public interface AuthenticationService {
 
     JwtResponse authenticate(LoginDto loginDto);
 
+    JwtResponse getNewAccessToken(String refreshToken);
+
     UserEntity signup(RegisterDto registerDto);
 
     JwtResponse refresh(String refreshToken);
