@@ -8,7 +8,7 @@ import com.starleken.springchannel.entity.ChannelEntity;
 import com.starleken.springchannel.mapper.ChannelMapper;
 import com.starleken.springchannel.repository.ChannelRepository;
 import com.starleken.springchannel.service.ChannelService;
-import com.starleken.springchannel.service.ImageService;
+import com.starleken.springchannel.service.ImageMessagingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,7 +29,7 @@ public class ChannelServiceImpl implements ChannelService {
 
     private final ChannelRepository channelRepository;
     private final ChannelMapper mapper;
-    private final ImageService imageService;
+    private final ImageMessagingService imageMessagingService;
 
     @Override
     @Transactional(readOnly = true)
@@ -67,7 +67,7 @@ public class ChannelServiceImpl implements ChannelService {
 
         checkIfNameChannelIsExists(channelToSave.getName(), channelToSave.getId());
 
-        String imageUrl = imageService.uploadImage(dto.getImage());
+        String imageUrl = imageMessagingService.uploadImage(dto.getImage());
         channelToSave.setImageUrl(imageUrl);
         ChannelEntity savedChannel = channelRepository.save(channelToSave);
 

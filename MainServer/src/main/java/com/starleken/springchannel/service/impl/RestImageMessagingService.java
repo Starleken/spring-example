@@ -1,22 +1,23 @@
 package com.starleken.springchannel.service.impl;
 
-import com.starleken.springchannel.service.ImageService;
-import com.starleken.springchannel.utils.ExceptionUtils;
+import com.starleken.springchannel.service.ImageMessagingService;
 import com.starleken.springchannel.utils.ImageNameGetterUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import static com.starleken.springchannel.utils.ExceptionUtils.*;
+import static com.starleken.springchannel.utils.ExceptionUtils.throwServerIsUnavailableException;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
-public class ImageServiceImpl implements ImageService {
+@RequiredArgsConstructor
+public class RestImageMessagingService implements ImageMessagingService {
 
     private final RestTemplate rest;
     private final String serverUrl = "http://localhost:8081/api/v1";

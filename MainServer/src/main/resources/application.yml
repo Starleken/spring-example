@@ -23,4 +23,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
-   
+
+  rabbitmq:
+    host: localhost
+    virtualhost: /
+    port: 15672
+    username: guest
+    password: guest
